@@ -25,60 +25,53 @@
             />
             <hr class="my-2" />
             <template v-for="group in groups.data" :key="group.id">
-                <div
-                    class="rounded-xl"
+                <main-item
                     :class="
                         selectedGroup === group ? 'bg-gray-100' : 'bg-gray-50'
                     "
                 >
-                    <div class="py-2 px-3 flex">
-                        <div class="flex-1 pr-1 max-w-100-40">
-                            <h3 class="text-lg font-semibold">
-                                {{ group.name }}
-                            </h3>
-                            <p class="text-gray-500">
-                                {{ group.description }}
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
+                    <template #title>
+                        {{ group.name }}
+                    </template>
+                    <template #description>
+                        {{ group.description }}
+                    </template>
+                    <template #buttons>
+                        <button
+                            title="Выбрать"
+                            class="py-2 w-10 border border-transparent h-max rounded-xl text-white focus:outline-none focus:ring transition ease-in-out duration-150"
+                            :class="
+                                selectedGroup === group
+                                    ? 'bg-red-400 hover:bg-red-500 active:bg-red-700 focus:border-red-600 ring-red-400'
+                                    : 'bg-green-600 hover:bg-green-700 active:bg-green-900 focus:border-green-900 ring-green-400'
+                            "
+                            @click="onSelectGroup(group)"
+                        >
+                            <font-awesome-icon
+                                :icon="`fa-solid fa-${
+                                    selectedGroup === group ? 'times' : 'check'
+                                }`"
+                                size="sm"
+                            />
+                        </button>
+                        <template v-if="group.canEdit">
                             <button
-                                title="Выбрать"
-                                class="py-2 w-10 border border-transparent h-max rounded-xl text-white focus:outline-none focus:ring transition ease-in-out duration-150"
-                                :class="
-                                    selectedGroup === group
-                                        ? 'bg-red-400 hover:bg-red-500 active:bg-red-700 focus:border-red-600 ring-red-400'
-                                        : 'bg-green-600 hover:bg-green-700 active:bg-green-900 focus:border-green-900 ring-green-400'
-                                "
-                                @click="onSelectGroup(group)"
+                                title="Удалить"
+                                @click="destroy(group.id)"
+                                class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
                             >
                                 <font-awesome-icon
-                                    :icon="`fa-solid fa-${
-                                        selectedGroup === group
-                                            ? 'times'
-                                            : 'check'
-                                    }`"
+                                    icon="fa-solid fa-trash"
                                     size="sm"
                                 />
                             </button>
-                            <template v-if="group.canEdit">
-                                <button
-                                    title="Удалить"
-                                    @click="destroy(group.id)"
-                                    class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
-                                >
-                                    <font-awesome-icon
-                                        icon="fa-solid fa-trash"
-                                        size="sm"
-                                    />
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                    <p class="text-gray-400 text-xs text-right pr-1">
+                        </template>
+                    </template>
+                    <template #footer>
                         Создано:
                         {{ new Date(group.dateTime).toLocaleDateString() }}
-                    </p>
-                </div>
+                    </template>
+                </main-item>
                 <hr class="my-2" />
             </template>
         </div>
@@ -93,7 +86,7 @@
                     :disabled="!selectedGroup.id"
                     type="text"
                     placeholder="Введите email..."
-                    class="px-3 py-2 rounded-xl shadow w-full border-gray-300 hover:border-gray-400 focus:border-gray-100 disabled:opacity-50"
+                    class="px-3 py-2 rounded-xl shadow w-full border border-gray-300 hover:border-gray-400 focus:border-gray-500 focus:outline-none disabled:opacity-50"
                 />
                 <template v-if="selectedGroup.canEdit">
                     <button
@@ -116,14 +109,14 @@
             />
             <hr class="my-2" />
             <template v-for="user in filteredUsers" :key="user.id">
-                <div class="rounded-xl bg-gray-50">
-                    <div class="py-2 px-3 flex">
-                        <div class="flex-1 pr-1">
-                            <h3 class="text-lg font-semibold">
-                                {{ user.name }}
-                            </h3>
-                            <p class="text-gray-500">email: {{ user.email }}</p>
-                        </div>
+                <main-item class="bg-gray-50">
+                    <template #title>
+                        {{ user.name }}
+                    </template>
+                    <template #description>
+                        {{ user.email }}
+                    </template>
+                    <template #buttons>
                         <template v-if="selectedGroup.canEdit">
                             <button
                                 title="Удалить"
@@ -136,13 +129,11 @@
                                 />
                             </button>
                         </template>
-                    </div>
-                    <template v-if="user.isAdmin">
-                        <p class="text-gray-400 text-xs text-right pr-1">
-                            Администратор
-                        </p>
                     </template>
-                </div>
+                    <template #footer>
+                        <template v-if="user.isAdmin"> Администратор </template>
+                    </template>
+                </main-item>
                 <hr class="my-2" />
             </template>
         </div>
@@ -153,6 +144,7 @@
 import UpdateGroup from "./UpdateGroup.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
+import MainItem from "../MainItem.vue";
 
 import useGroups from "../../composables/groups";
 import { computed, onMounted, ref, watch } from "vue";
@@ -162,6 +154,7 @@ export default {
         UpdateGroup,
         LegendLabel,
         Pagination,
+        MainItem,
     },
     props: {
         perPage: {
@@ -265,12 +258,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.h-max {
-    height: max-content;
-}
-.max-w-100-40 {
-    max-width: calc(100% - 40px);
-}
-</style>

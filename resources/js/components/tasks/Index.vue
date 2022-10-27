@@ -1,14 +1,27 @@
 <template>
     <div class="mb-3 flex gap-3">
-        <legend-label name="Группа" class="bg-gray-50 rounded-lg w-full">
-            <select
-                v-model="selectedGroup"
-                class="rounded-lg shadow-md border border-gray-300 text-gray-900 text-sm focus:border-blue-100 block w-full"
+        <legend-label name="Группа" class="rounded-lg w-full">
+            <div
+                class="relative rounded-lg shadow-md border border-gray-300 text-gray-900 text-sm focus:border-blue-100 block"
             >
-                <option v-for="group in groups" :key="group.id" :value="group">
-                    {{ group.name }}
-                </option>
-            </select>
+                <select
+                    v-model="selectedGroup"
+                    class="w-full py-2 px-3 rounded-lg appearance-none focus:outline-none"
+                >
+                    <option
+                        v-for="group in groups"
+                        :key="group.id"
+                        :value="group"
+                    >
+                        {{ group.name }}
+                    </option>
+                </select>
+                <font-awesome-icon
+                    class="absolute right-3 top-3"
+                    icon="fa-solid fa-chevron-down"
+                    size="sm"
+                />
+            </div>
         </legend-label>
         <button
             title="Отправить по почте"
@@ -47,82 +60,72 @@
                 v-for="task in tasks.data.notCompleted.data"
                 :key="task.id"
             >
-                <div
-                    class="rounded-xl"
+                <main-item
                     :class="
                         selectedTask === task ? 'bg-gray-100' : 'bg-gray-50'
                     "
                 >
-                    <div class="py-2 px-3 flex">
-                        <div class="flex-1 pr-1 max-w-100-40">
-                            <h3 class="text-lg font-semibold">
-                                {{ task.title }}
-                            </h3>
-                            <p class="text-gray-500">
-                                {{ task.description }}
-                            </p>
-                            <p
-                                v-if="task.files.length"
-                                class="flex flex-wrap gap-1 mt-1"
-                            >
-                                <template
-                                    v-for="file in task.files"
-                                    :key="file.id"
-                                >
-                                    <button
-                                        title="Скачать"
-                                        class="px-2 bg-blue-600 border border-transparent h-max rounded text-white hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-400 transition ease-in-out duration-150"
-                                        @click="downloadTaskFile(file)"
-                                    >
-                                        <font-awesome-icon
-                                            icon="fa-solid fa-download"
-                                            size="sm"
-                                        />
-                                        <span class="text-xs ml-1">
-                                            {{ file.name }}
-                                        </span>
-                                    </button>
-                                </template>
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
+                    <template #title>
+                        {{ task.title }}
+                    </template>
+                    <template #description>
+                        {{ task.description }}
+                    </template>
+                    <p
+                        v-if="task.files.length"
+                        class="flex flex-wrap gap-1 mt-1"
+                    >
+                        <template v-for="file in task.files" :key="file.id">
                             <button
-                                title="Выполнено"
-                                class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
-                                @click="
-                                    onChangeCompleted(task.id, 'notCompleted')
-                                "
+                                title="Скачать"
+                                class="px-2 bg-blue-600 border border-transparent h-max rounded text-white hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-400 transition ease-in-out duration-150"
+                                @click="downloadTaskFile(file)"
                             >
                                 <font-awesome-icon
-                                    icon="fa-solid fa-hand-point-right"
+                                    icon="fa-solid fa-download"
+                                    size="sm"
+                                />
+                                <span class="text-xs ml-1">
+                                    {{ file.name }}
+                                </span>
+                            </button>
+                        </template>
+                    </p>
+                    <template #buttons>
+                        <button
+                            title="Выполнено"
+                            class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
+                            @click="onChangeCompleted(task.id, 'notCompleted')"
+                        >
+                            <font-awesome-icon
+                                icon="fa-solid fa-hand-point-right"
+                                size="sm"
+                            />
+                        </button>
+                        <template v-if="canEdit(task)">
+                            <button
+                                title="Выбрать"
+                                class="px-3 py-2 bg-purple-600 border border-transparent h-max rounded-xl text-white hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:border-purple-900 focus:ring ring-purple-400 transition ease-in-out duration-150"
+                                @click="selectedTask = task"
+                            >
+                                <font-awesome-icon
+                                    icon="fa-solid fa-pen-to-square"
                                     size="sm"
                                 />
                             </button>
-                            <template v-if="canEdit(task)">
-                                <button
-                                    title="Выбрать"
-                                    class="px-3 py-2 bg-purple-600 border border-transparent h-max rounded-xl text-white hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:border-purple-900 focus:ring ring-purple-400 transition ease-in-out duration-150"
-                                    @click="selectedTask = task"
-                                >
-                                    <font-awesome-icon
-                                        icon="fa-solid fa-pen-to-square"
-                                        size="sm"
-                                    />
-                                </button>
-                                <button
-                                    title="Удалить"
-                                    @click="onDelete(task.id, 'notCompleted')"
-                                    class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
-                                >
-                                    <font-awesome-icon
-                                        icon="fa-solid fa-trash"
-                                        size="sm"
-                                    />
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                    <p class="text-gray-400 text-xs text-right pr-1">
+                            <button
+                                title="Удалить"
+                                @click="onDelete(task.id, 'notCompleted')"
+                                class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
+                            >
+                                <font-awesome-icon
+                                    icon="fa-solid fa-trash"
+                                    size="sm"
+                                />
+                            </button>
+                        </template>
+                    </template>
+                    <template #footer>
                         <template v-if="task.user">
                             <template v-if="task.user.id === userId">
                                 Создал(-а):
@@ -134,8 +137,8 @@
                         </template>
                         <template v-else> Создано: </template>
                         {{ new Date(task.dateTime).toLocaleDateString() }}
-                    </p>
-                </div>
+                    </template>
+                </main-item>
                 <hr class="my-2" />
             </template>
         </div>
@@ -153,63 +156,58 @@
             />
             <hr class="my-2" />
             <template v-for="task in tasks.data.completed.data" :key="task.id">
-                <div class="rounded-xl bg-gray-50">
-                    <div class="py-2 flex px-3">
-                        <div class="flex-1 pr-1 max-w-100-40">
-                            <h3 class="text-lg font-semibold">
-                                {{ task.title }}
-                            </h3>
-                            <p class="text-gray-500">
-                                {{ task.description }}
-                            </p>
-                            <p
-                                v-if="task.files.length"
-                                class="flex flex-wrap gap-1 mt-1"
-                            >
-                                <template
-                                    v-for="file in task.files"
-                                    :key="file.id"
-                                >
-                                    <button
-                                        title="Скачать"
-                                        class="px-2 bg-blue-600 border border-transparent h-max rounded text-white hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-400 transition ease-in-out duration-150"
-                                        @click="downloadTaskFile(file)"
-                                    >
-                                        <font-awesome-icon
-                                            icon="fa-solid fa-download"
-                                            size="sm"
-                                        />
-                                        <span class="text-xs ml-1">
-                                            {{ file.name }}
-                                        </span>
-                                    </button>
-                                </template>
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
+                <main-item class="bg-gray-50">
+                    <template #title>
+                        {{ task.title }}
+                    </template>
+                    <template #description>
+                        {{ task.description }}
+                    </template>
+
+                    <p
+                        v-if="task.files.length"
+                        class="flex flex-wrap gap-1 mt-1"
+                    >
+                        <template v-for="file in task.files" :key="file.id">
                             <button
-                                class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
-                                @click="onChangeCompleted(task.id, 'completed')"
+                                title="Скачать"
+                                class="px-2 bg-blue-600 border border-transparent h-max rounded text-white hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-400 transition ease-in-out duration-150"
+                                @click="downloadTaskFile(file)"
                             >
                                 <font-awesome-icon
-                                    icon="fa-solid fa-hand-point-left"
+                                    icon="fa-solid fa-download"
+                                    size="sm"
+                                />
+                                <span class="text-xs ml-1">
+                                    {{ file.name }}
+                                </span>
+                            </button>
+                        </template>
+                    </p>
+
+                    <template #buttons>
+                        <button
+                            class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
+                            @click="onChangeCompleted(task.id, 'completed')"
+                        >
+                            <font-awesome-icon
+                                icon="fa-solid fa-hand-point-left"
+                                size="sm"
+                            />
+                        </button>
+                        <template v-if="canEdit(task)">
+                            <button
+                                @click="onDelete(task.id, 'completed')"
+                                class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
+                            >
+                                <font-awesome-icon
+                                    icon="fa-solid fa-trash"
                                     size="sm"
                                 />
                             </button>
-                            <template v-if="canEdit(task)">
-                                <button
-                                    @click="onDelete(task.id, 'completed')"
-                                    class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
-                                >
-                                    <font-awesome-icon
-                                        icon="fa-solid fa-trash"
-                                        size="sm"
-                                    />
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                    <p class="text-gray-400 text-xs text-right pr-1">
+                        </template>
+                    </template>
+                    <template #footer>
                         <template v-if="task.completed_user">
                             <template v-if="task.completed_user.id === userId">
                                 Выполнил(-а):
@@ -221,8 +219,8 @@
                         </template>
                         <template v-else> Выполнено: </template>
                         {{ new Date(task.dateTime).toLocaleDateString() }}
-                    </p>
-                </div>
+                    </template>
+                </main-item>
                 <hr class="my-2" />
             </template>
         </div>
@@ -233,6 +231,7 @@
 import UpdateTask from "./UpdateTask.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
+import MainItem from "../MainItem.vue";
 
 import useTasks from "../../composables/tasks";
 import useGroups from "../../composables/groups";
@@ -244,6 +243,7 @@ export default {
         UpdateTask,
         LegendLabel,
         Pagination,
+        MainItem,
     },
     props: {
         userId: {
@@ -338,12 +338,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.h-max {
-    height: max-content;
-}
-.max-w-100-40 {
-    max-width: calc(100% - 40px);
-}
-</style>

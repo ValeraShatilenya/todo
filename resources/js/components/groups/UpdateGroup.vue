@@ -1,38 +1,24 @@
 <template>
     <div class="flex flex-col space-y-4">
-        <template v-if="!group.id || group.canEdit">
-            <input
-                v-model.trim="name"
-                type="text"
-                placeholder="Заголовок..."
-                class="py-3 px-4 rounded-xl shadow-md border-gray-300 hover:border-gray-400 focus:border-gray-100"
-            />
-            <textarea
-                v-model.trim="description"
-                placeholder="Описание..."
-                class="py-3 px-4 rounded-xl shadow-md border-gray-300 hover:border-gray-400 focus:border-gray-100"
-            />
-        </template>
-        <template v-else>
-            <input
-                :value="name"
-                disabled
-                type="text"
-                placeholder="Заголовок..."
-                class="py-3 px-4 rounded-xl shadow-md border-gray-300 bg-gray-200 text-gray-500"
-            />
-            <textarea
-                :value="description"
-                disabled
-                placeholder="Описание..."
-                class="py-3 px-4 rounded-xl shadow-md border-gray-300 bg-gray-200 text-gray-500"
-            />
-        </template>
+        <input
+            v-model.trim="name"
+            :disabled="notAccess"
+            type="text"
+            placeholder="Заголовок..."
+            class="py-3 px-4 rounded-xl shadow-md border border-gray-300 disabled:opacity-50 hover:border-gray-400 focus:border-gray-500 focus:outline-none"
+        />
+        <textarea
+            v-model.trim="description"
+            :disabled="notAccess"
+            placeholder="Описание..."
+            class="py-3 px-4 rounded-xl shadow-md border border-gray-300 disabled:opacity-50 hover:border-gray-400 focus:border-gray-500 focus:outline-none"
+        />
+
         <div class="flex space-x-4 text-xs text-white tracking-wider">
             <button
                 v-if="group.id"
                 class="w-24 py-2 uppercase rounded-xl focus:outline-none focus:ring transition ease-in-out duration-150 disabled:opacity-50 bg-purple-500 hover:bg-purple-700 active:bg-purple-900 focus:border-purple-900 ring-purple-300"
-                :disabled="isNotValidData || !group.canEdit"
+                :disabled="isNotValidData || notAccess"
                 @click="onClickUpdateButton"
             >
                 Обновить
@@ -47,9 +33,7 @@
             </button>
             <button
                 class="w-24 py-2 uppercase bg-yellow-500 rounded-xl hover:bg-yellow-600 active:bg-yellow-700 focus:outline-none disabled:opacity-50 focus:border-yellow-900 focus:ring ring-yellow-300 transition ease-in-out duration-150"
-                :disabled="
-                    !(name || description) || (group.id && !group.canEdit)
-                "
+                :disabled="(!name && !description) || notAccess"
                 @click="onClickCleanButton"
             >
                 Очистить
@@ -57,7 +41,6 @@
             <button
                 v-if="group.id"
                 class="w-24 py-2 uppercase bg-gray-500 rounded-xl hover:bg-gray-600 active:bg-gray-700 focus:outline-none disabled:opacity-50 focus:border-gray-900 focus:ring ring-gray-300 transition ease-in-out duration-150"
-                :disabled="!group.canEdit"
                 @click="onClickCancelButton"
             >
                 Отменить
@@ -96,6 +79,10 @@ export default {
             }
         });
 
+        const notAccess = computed(() => {
+            return props.group.id && !props.group.canEdit;
+        });
+
         const isNotValidData = computed(() => {
             return !name.value || !description.value;
         });
@@ -116,7 +103,7 @@ export default {
         };
 
         const onClickUpdateButton = () => {
-            if (!name.value) {
+            if (isNotValidData.value || notAccess.value) {
                 return;
             }
             emit("update", {
@@ -134,6 +121,7 @@ export default {
             name,
             description,
             isNotValidData,
+            notAccess,
             onClickCleanButton,
             onClickCreateButton,
             onClickCancelButton,
@@ -142,9 +130,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.h-max {
-    height: max-content;
-}
-</style>

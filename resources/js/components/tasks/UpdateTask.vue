@@ -4,12 +4,12 @@
             v-model.trim="title"
             type="text"
             placeholder="Заголовок..."
-            class="py-3 px-4 rounded-xl shadow-md border-gray-300 hover:border-gray-400 focus:border-gray-100"
+            class="py-3 px-4 rounded-xl shadow-md border border-gray-300 hover:border-gray-400 focus:border focus:border-gray-500 focus:outline-none"
         />
         <textarea
             v-model.trim="description"
             placeholder="Описание..."
-            class="py-3 px-4 rounded-xl shadow-md border-gray-300 hover:border-gray-400 focus:border-gray-100"
+            class="py-3 px-4 rounded-xl shadow-md border border-gray-300 hover:border-gray-400 focus:border focus:border-gray-500 focus:outline-none"
         />
         <div class="relative">
             <input
@@ -177,9 +177,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.h-max {
-    height: max-content;
-}
-</style>
