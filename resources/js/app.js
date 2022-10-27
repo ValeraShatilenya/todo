@@ -18,7 +18,7 @@ library.add(fas);
 const app = document.querySelector("#app");
 const userId = +app?.dataset?.auth;
 userId && app.removeAttribute("data-auth");
-const perPage = 4;
+const perPage = 15;
 
 createApp({})
     .use(router({ userId, perPage }))
