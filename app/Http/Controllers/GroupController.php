@@ -17,7 +17,7 @@ class GroupController extends Controller
     /**
      * Find group or fail
      */
-    private function findOrFailGroup(int $id): object
+    private function findOrFailGroup(int $id, bool $definitelyAdmin = false): object
     {
         $group = Group::whereHas('users', function ($query) {
             $query->currentUser();
@@ -27,6 +27,11 @@ class GroupController extends Controller
             }])
             ->findOrFail($id);
         $isAdmin = $group->groupUsers->isNotEmpty();
+        if ($definitelyAdmin && !$isAdmin) {
+            return response()->json([
+                'message' => 'Access denied!'
+            ], 404);
+        }
         return (object)compact('group', 'isAdmin');
     }
 
@@ -126,11 +131,9 @@ class GroupController extends Controller
      */
     public function addUser(Request $request, int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id);
+        $groupInfo = $this->findOrFailGroup($id, true);
         $userId = User::where('email', $request->email)->firstOrFail();
-        if ($groupInfo->isAdmin) {
-            $groupInfo->group->users()->syncWithoutDetaching($userId);
-        }
+        $groupInfo->group->users()->syncWithoutDetaching($userId);
         return response()->noContent();
     }
 
@@ -140,10 +143,8 @@ class GroupController extends Controller
      */
     public function deleteUser(int $groupId, int $userId): Response
     {
-        $groupInfo = $this->findOrFailGroup($groupId);
-        if ($groupInfo->isAdmin) {
-            $groupInfo->group->users()->detach($userId);
-        }
+        $groupInfo = $this->findOrFailGroup($groupId, true);
+        $groupInfo->group->users()->detach($userId);
         return response()->noContent();
     }
 
@@ -153,10 +154,8 @@ class GroupController extends Controller
      */
     public function update(GroupRequest $request, int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id);
-        if ($groupInfo->isAdmin) {
-            $groupInfo->group->update($request->only('name', 'description'));
-        }
+        $groupInfo = $this->findOrFailGroup($id, true);
+        $groupInfo->group->update($request->only('name', 'description'));
         return response()->noContent();
     }
 
@@ -166,10 +165,8 @@ class GroupController extends Controller
      */
     public function destroy(int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id);
-        if ($groupInfo->isAdmin) {
-            $groupInfo->group->delete();
-        }
+        $groupInfo = $this->findOrFailGroup($id, true);
+        $groupInfo->group->delete();
         return response()->noContent();
     }
 }
