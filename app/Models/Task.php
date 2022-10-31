@@ -14,7 +14,7 @@ class Task extends Model
     use SoftDeletes;
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'user_id', 'completed'];
+    protected $fillable = ['title', 'status', 'description', 'user_id', 'completed'];
 
     public function scopeNotCompleted($query)
     {

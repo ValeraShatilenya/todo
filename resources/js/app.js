@@ -18,10 +18,9 @@ library.add(fas);
 const app = document.querySelector("#app");
 const userId = +app?.dataset?.auth;
 userId && app.removeAttribute("data-auth");
-const perPage = 15;
 
 createApp({})
-    .use(router({ userId, perPage }))
+    .use(router({ userId }))
     .component("font-awesome-icon", FontAwesomeIcon)
     .component("custom-navbar", CustomNavbar)
     .mount("#app");

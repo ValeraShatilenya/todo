@@ -16,10 +16,12 @@ class TaskFactory extends Factory
     {
         $date = $this->faker->date();
         $completed = rand(0, 1) ? $date : null;
+        $status = rand(1, 4);
         return [
             'user_id' => User::inRandomOrder()->first()->id,
             'title' => $this->faker->sentence(3),
             'description' => $this->faker->paragraph(3),
+            'status' => $status,
             'completed' => $completed,
             'created_at' => $date,
             'updated_at' => $date,

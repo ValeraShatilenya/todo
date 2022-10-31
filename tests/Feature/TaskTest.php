@@ -61,6 +61,7 @@ class TaskTest extends TestCase
         $task = $user->tasks()->create([
             'title' => 'Title',
             'description' => 'Description',
+            'status' => rand(1, 4),
             'completed' => null
         ]);
 
@@ -109,6 +110,7 @@ class TaskTest extends TestCase
             ->post("/task", [
                 'title' => 'Test title',
                 'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
+                'status' => rand(1, 4),
                 'file_1' => $file
             ]);
 
@@ -157,6 +159,7 @@ class TaskTest extends TestCase
             ->post("/task/$task->id", [
                 'title' => 'Test title',
                 'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
+                'status' => rand(1, 4),
                 'file_1' => $newFile
             ]);
 
@@ -186,7 +189,8 @@ class TaskTest extends TestCase
         $response = $this->actingAs($newUser)
             ->post("/task/$task->id", [
                 'title' => 'Test title',
-                'description' => 'Test description'
+                'description' => 'Test description',
+                'status' => rand(1, 4)
             ]);
 
         $response->assertNotFound();

@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import Task from "../components/tasks/Index.vue";
 import Group from "../components/groups/Index.vue";
 
+import { PER_PAGE } from "../constants";
+
 export default (props) =>
     createRouter({
         history: createWebHistory(),
@@ -12,7 +14,6 @@ export default (props) =>
                 component: Task,
                 name: "task",
                 props: {
-                    perPage: props.perPage,
                     userId: props.userId,
                 },
             },
@@ -20,9 +21,6 @@ export default (props) =>
                 path: "/group",
                 component: Group,
                 name: "group",
-                props: {
-                    perPage: props.perPage,
-                },
             },
             {
                 path: "/:catchAll(.*)",

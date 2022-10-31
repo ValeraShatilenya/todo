@@ -34,6 +34,7 @@
     <div class="mb-6">
         <update-task
             :task="selectedTask"
+            :statuses="statuses"
             @create="onCreate"
             @update="onUpdate"
             @unselectTask="selectedTask = {}"
@@ -51,16 +52,22 @@
             <pagination
                 v-model:page="tasks.data.notCompleted.page"
                 :total="tasks.data.notCompleted.total"
-                :perPage="perPage"
                 :totalCurrent="tasks.data.notCompleted.data.length"
                 class="flex justify-center"
             />
-            <hr class="my-2" />
+            <dropdown-sort
+                :data="taskSorts"
+                v-model="tasks.data.notCompleted.sort"
+                class="flex justify-end mt-1"
+            />
+            <hr class="mb-2" />
             <template
                 v-for="task in tasks.data.notCompleted.data"
                 :key="task.id"
             >
                 <main-item
+                    :status="task.status"
+                    :statuses="statusesByValue"
                     :class="
                         selectedTask === task ? 'bg-gray-100' : 'bg-gray-50'
                     "
@@ -150,13 +157,21 @@
             <pagination
                 v-model:page="tasks.data.completed.page"
                 :total="tasks.data.completed.total"
-                :perPage="perPage"
                 :totalCurrent="tasks.data.completed.data.length"
                 class="flex justify-center"
             />
-            <hr class="my-2" />
+            <dropdown-sort
+                :data="taskSorts"
+                v-model="tasks.data.completed.sort"
+                class="flex justify-end mt-1"
+            />
+            <hr class="mb-2" />
             <template v-for="task in tasks.data.completed.data" :key="task.id">
-                <main-item class="bg-gray-50">
+                <main-item
+                    :status="task.status"
+                    :statuses="statusesByValue"
+                    class="bg-gray-50"
+                >
                     <template #title>
                         {{ task.title }}
                     </template>
@@ -232,6 +247,9 @@ import UpdateTask from "./UpdateTask.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
 import MainItem from "../MainItem.vue";
+import DropdownSort from "../DropdownSort.vue";
+
+import { STATUSES, TASK_SORTS } from "../../constants";
 
 import useTasks from "../../composables/tasks";
 import useGroups from "../../composables/groups";
@@ -244,6 +262,7 @@ export default {
         LegendLabel,
         Pagination,
         MainItem,
+        DropdownSort,
     },
     props: {
         userId: {
@@ -251,23 +270,20 @@ export default {
             required: true,
             default: 0,
         },
-        perPage: {
-            type: Number,
-            default: 15,
-        },
     },
     setup(props) {
         const selectedTask = ref({});
         const selectedGroup = ref({});
-        const tasks = useTasks(props.perPage, selectedTask);
+        const tasks = useTasks(selectedTask);
 
         const groups = ref([]);
         const { getGroupsForTasks: getGroups } = useGroups();
 
-        const groupTasks = useGroupTasks(
-            props.perPage,
-            selectedTask,
-            selectedGroup
+        const groupTasks = useGroupTasks(selectedTask, selectedGroup);
+
+        const statusesByValue = STATUSES.reduce(
+            (obj, status) => ((obj[status.value] = status), obj),
+            {}
         );
 
         onMounted(async () => {
@@ -321,7 +337,9 @@ export default {
         };
 
         return {
-            perPage: props.perPage,
+            statuses: STATUSES,
+            statusesByValue: statusesByValue,
+            taskSorts: TASK_SORTS,
             usersId: props.userId,
             groups,
             tasks: computedTasks,

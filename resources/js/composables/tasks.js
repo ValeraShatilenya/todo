@@ -3,10 +3,14 @@ import axios from "axios";
 import downloadBlob from "../utils/downloadBlob.utils";
 import prepareFormData from "../utils/prepareFormData.utils";
 
-export default function (perPage, selectedTask) {
+import { PER_PAGE } from "../constants";
+
+export default function (selectedTask) {
+    console.log(PER_PAGE);
+
     const data = reactive({
-        completed: { data: [], page: 1, total: 0 },
-        notCompleted: { data: [], page: 1, total: 0 },
+        completed: { data: [], page: 1, total: 0, sort: "dateTime" },
+        notCompleted: { data: [], page: 1, total: 0, sort: "dateTime" },
     });
 
     const getNotCompleted = async () => {
@@ -14,7 +18,8 @@ export default function (perPage, selectedTask) {
             const { data: tasks } = await axios.get("/task/notCompleted", {
                 params: {
                     page: data.notCompleted.page,
-                    perPage,
+                    perPage: PER_PAGE,
+                    sort: data.notCompleted.sort,
                 },
             });
             data.notCompleted.data = tasks.data;
@@ -29,7 +34,8 @@ export default function (perPage, selectedTask) {
             const { data: tasks } = await axios.get("/task/completed", {
                 params: {
                     page: data.completed.page,
-                    perPage,
+                    perPage: PER_PAGE,
+                    sort: data.completed.sort,
                 },
             });
             data.completed.data = tasks.data;
@@ -125,21 +131,15 @@ export default function (perPage, selectedTask) {
         }
     };
 
-    watch(
-        () => data.notCompleted.page,
-        () => {
-            getNotCompleted();
-            selectedTask.value = {};
-        }
-    );
+    watch([() => data.notCompleted.page, () => data.notCompleted.sort], () => {
+        getNotCompleted();
+        selectedTask.value = {};
+    });
 
-    watch(
-        () => data.completed.page,
-        () => {
-            getCompleted();
-            selectedTask.value = {};
-        }
-    );
+    watch([() => data.completed.page, () => data.completed.sort], () => {
+        getCompleted();
+        selectedTask.value = {};
+    });
 
     return {
         data,

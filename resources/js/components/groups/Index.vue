@@ -19,7 +19,6 @@
             <pagination
                 v-model:page="groups.page"
                 :total="groups.total"
-                :perPage="perPage"
                 :totalCurrent="groups.data.length"
                 class="flex justify-center"
             />
@@ -103,7 +102,6 @@
             <pagination
                 v-model:page="userPage"
                 :total="filteredUsersSearch.length"
-                :perPage="perPage"
                 :totalCurrent="filteredUsers.length"
                 class="flex justify-center"
             />
@@ -146,6 +144,8 @@ import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
 import MainItem from "../MainItem.vue";
 
+import { PER_PAGE } from "../../constants";
+
 import useGroups from "../../composables/groups";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -156,13 +156,7 @@ export default {
         Pagination,
         MainItem,
     },
-    props: {
-        perPage: {
-            type: Number,
-            default: 15,
-        },
-    },
-    setup(props) {
+    setup() {
         const {
             groups,
             users,
@@ -174,7 +168,7 @@ export default {
             deleteUser,
             update,
             destroy,
-        } = useGroups(props.perPage);
+        } = useGroups();
 
         const userSearch = ref("");
         const userPage = ref(1);
@@ -196,8 +190,8 @@ export default {
 
         const filteredUsers = computed(() => {
             return filteredUsersSearch.value.slice(
-                props.perPage * (userPage.value - 1),
-                props.perPage * userPage.value
+                PER_PAGE * (userPage.value - 1),
+                PER_PAGE * userPage.value
             );
         });
 

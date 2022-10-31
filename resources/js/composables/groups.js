@@ -1,7 +1,9 @@
 import { reactive, ref, watch } from "vue";
 import axios from "axios";
 
-export default function (perPage) {
+import { PER_PAGE } from "../constants";
+
+export default function () {
     const selectedGroup = ref({});
 
     const groups = reactive({ data: [], page: 1, total: 0 });
@@ -23,7 +25,7 @@ export default function (perPage) {
             const { data } = await axios.get("/group/forGroups", {
                 params: {
                     page: groups.page,
-                    perPage,
+                    perPage: PER_PAGE,
                 },
             });
             groups.data = data.data;

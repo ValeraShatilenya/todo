@@ -19,6 +19,7 @@ class CreateGroupTasksTable extends Migration
             $table->foreignId('user_id');
             $table->string('title');
             $table->text('description');
+            $table->tinyInteger('status');
             $table->timestamp('completed')->nullable();
             $table->foreignId('completed_user_id')->nullable();
             $table->timestamps();

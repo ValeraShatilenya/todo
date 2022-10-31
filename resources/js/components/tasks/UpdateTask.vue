@@ -1,11 +1,20 @@
 <template>
     <div class="flex flex-col space-y-4">
-        <input
-            v-model.trim="title"
-            type="text"
-            placeholder="Заголовок..."
-            class="py-3 px-4 rounded-xl shadow-md border border-gray-300 hover:border-gray-400 focus:border focus:border-gray-500 focus:outline-none"
-        />
+        <div class="flex gap-2">
+            <input
+                v-model.trim="title"
+                type="text"
+                placeholder="Заголовок..."
+                class="py-3 px-4 w-full rounded-xl shadow-md border border-gray-300 hover:border-gray-400 focus:border focus:border-gray-500 focus:outline-none"
+            />
+            <dropdown-radio
+                v-model="status"
+                position="left"
+                title="Статус"
+                name="status"
+                :data="statuses"
+            />
+        </div>
         <textarea
             v-model.trim="description"
             placeholder="Описание..."
@@ -26,7 +35,7 @@
                 Нажмите для выбора файла
             </label>
         </div>
-        <div class="flex flex-wrap gap-1">
+        <div v-if="files.length" class="flex flex-wrap gap-1">
             <template v-for="(file, index) in files" :key="index">
                 <div
                     class="flex items-center gap-2 py-1 px-2 rounded-xl border border-gray-300"
@@ -77,24 +86,34 @@
 
 <script>
 import { computed, ref, watchEffect } from "vue";
+import DropdownRadio from "../DropdownRadio.vue";
 
 export default {
+    components: {
+        DropdownRadio,
+    },
     props: {
         task: {
             required: false,
             type: Object,
             default: () => ({}),
         },
+        statuses: {
+            required: true,
+            type: Array,
+        },
     },
     emits: ["create", "update", "unselectTask"],
     setup(props, { emit }) {
         const title = ref("");
+        const status = ref(props.statuses.at(-1).value);
         const description = ref("");
         const files = ref([]);
         const inputFile = ref(null);
 
         const clean = () => {
             title.value = "";
+            status.value = props.statuses.at(-1).value;
             description.value = "";
             files.value = [];
         };
@@ -103,6 +122,7 @@ export default {
             clean();
             if (props.task.id) {
                 title.value = props.task.title;
+                status.value = props.task.status;
                 description.value = props.task.description;
                 files.value = [...props.task.files];
             }
@@ -122,6 +142,7 @@ export default {
             }
             emit("create", {
                 title: title.value,
+                status: status.value,
                 description: description.value,
                 files: files.value,
             });
@@ -139,6 +160,7 @@ export default {
             });
             emit("update", {
                 title: title.value,
+                status: status.value,
                 description: description.value,
                 files: newFiles,
                 oldFiles,
@@ -163,6 +185,7 @@ export default {
 
         return {
             title,
+            status,
             description,
             files,
             inputFile,

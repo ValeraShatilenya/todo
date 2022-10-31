@@ -37,10 +37,10 @@ class GroupTaskController extends Controller implements TaskInterface
     /**
      * Get Not Completed tasks Builder.
      */
-    private function getNotCompletedBuilder(int $id = null, int $userId = null): Builder
+    private function getNotCompletedBuilder(int $id = null, int $userId = null, string $sort = 'dateTime'): Builder
     {
         $userId = $userId ?? Auth::user()->id;
-        return GroupTask::select('id', 'user_id', 'title', 'description', 'created_at as dateTime')
+        $builder = GroupTask::select('id', 'user_id', 'title', 'description', 'status', 'created_at as dateTime')
             ->where('group_id', $id)
             ->with(['user' => function ($query) {
                 $query->select('id', 'name');
@@ -48,17 +48,22 @@ class GroupTaskController extends Controller implements TaskInterface
             ->with(['files' => function ($query) {
                 $query->select('id', 'name', 'group_task_id');
             }])
-            ->notCompleted()
-            ->orderByDesc('created_at');
+            ->notCompleted();
+        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
+        else if ($sort === 'status') {
+            $builder->orderBy('status')
+                ->orderByDesc('dateTime');
+        }
+        return $builder;
     }
 
     /**
      * Get Not Completed tasks data.
      */
-    public function getNotCompletedData(int $id = null, int $userId = null, int $page = null, int $perPage = null)
+    public function getNotCompletedData(int $id = null, int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
     {
         $this->setGroupOrFail($id);
-        $builder = $this->getNotCompletedBuilder($id, $userId);
+        $builder = $this->getNotCompletedBuilder($id, $userId, $sort);
         if ($page && $perPage) {
             $builder->forPage($page, $perPage);
         }
@@ -80,16 +85,17 @@ class GroupTaskController extends Controller implements TaskInterface
         $page = $request->input('page', 1);
         $perPage = $request->input('perPage', 15);
         if ($perPage > 100)  $perPage = 100;
-        return ['data' => $this->getNotCompletedData($id, null, $page, $perPage), 'total' => $this->getNotCompletedBuilder($id, null)->count()];
+        $sort = $request->input('sort', 'dateTime');
+        return ['data' => $this->getNotCompletedData($id, null, $page, $perPage, $sort), 'total' => $this->getNotCompletedBuilder($id, null)->count()];
     }
 
     /**
      * Get Not Completed tasks Builder.
      */
-    private function getCompletedBuilder(int $id, int $userId = null): Builder
+    private function getCompletedBuilder(int $id, int $userId = null, string $sort = 'dateTime'): Builder
     {
         $userId = $userId ?? Auth::user()->id;
-        return GroupTask::select('id', 'user_id', 'completed_user_id', 'title', 'description', 'updated_at as dateTime')
+        $builder = GroupTask::select('id', 'user_id', 'completed_user_id', 'title', 'description', 'status', 'completed as dateTime')
             ->where('group_id', $id)
             ->with(['completedUser' => function ($query) {
                 $query->select('id', 'name');
@@ -100,18 +106,23 @@ class GroupTaskController extends Controller implements TaskInterface
             ->with(['files' => function ($query) {
                 $query->select('id', 'name', 'group_task_id');
             }])
-            ->completed()
-            ->orderByDesc('completed');
+            ->completed();
+        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
+        else if ($sort === 'status') {
+            $builder->orderBy('status')
+                ->orderByDesc('dateTime');
+        }
+        return $builder;
     }
 
     /**
      * Get Completed tasks data.
      */
-    public function getCompletedData(int $id = null, int $userId = null, int $page = null, int $perPage = null)
+    public function getCompletedData(int $id = null, int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
     {
         $this->setGroupOrFail($id);
 
-        $builder = $this->getCompletedBuilder($id, $userId);
+        $builder = $this->getCompletedBuilder($id, $userId, $sort);
         if ($page && $perPage) {
             $builder->forPage($page, $perPage);
         }
@@ -134,7 +145,8 @@ class GroupTaskController extends Controller implements TaskInterface
         $page = $request->input('page', 1);
         $perPage = $request->input('perPage', 15);
         if ($perPage > 100)  $perPage = 100;
-        return ['data' => $this->getCompletedData($id, null, $page, $perPage), 'total' => $this->getCompletedBuilder($id, null)->count()];
+        $sort = $request->input('sort', 'dateTime');
+        return ['data' => $this->getCompletedData($id, null, $page, $perPage, $sort), 'total' => $this->getCompletedBuilder($id, null)->count()];
     }
 
     /**
@@ -177,7 +189,7 @@ class GroupTaskController extends Controller implements TaskInterface
     {
         $this->setGroupOrFail($id);
 
-        $dataForCreate = $request->only('title', 'description');
+        $dataForCreate = $request->only('title', 'description', 'status');
         $dataForCreate['group_id'] = $id;
         $dataForCreate['user_id'] = Auth::user()->id;
         $groupTask = GroupTask::create($dataForCreate);
@@ -222,7 +234,7 @@ class GroupTaskController extends Controller implements TaskInterface
         $this->setGroupOrFail($groupTask->group_id);
 
         if ($this->group->isAdmin || $groupTask->user_id === Auth::user()->id) {
-            $groupTask->update($request->only('title', 'description'));
+            $groupTask->update($request->only('title', 'description', 'status'));
 
             $oldFiles = $request->oldFiles ? explode(',', $request->oldFiles) : [];
 

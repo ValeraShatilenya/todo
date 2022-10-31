@@ -14,7 +14,7 @@ class GroupTask extends Model
     use SoftDeletes;
     use HasFactory;
 
-    protected $fillable = ['group_id', 'user_id', 'title', 'description', 'completed', 'completed_user_id'];
+    protected $fillable = ['group_id', 'user_id', 'title', 'description', 'status', 'completed', 'completed_user_id'];
 
     public function scopeNotCompleted($query)
     {

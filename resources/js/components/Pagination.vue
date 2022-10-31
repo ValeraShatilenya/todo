@@ -40,6 +40,10 @@
 </template>
 
 <script>
+import { PER_PAGE } from "../constants";
+
+import { computed } from "vue";
+
 export default {
     props: {
         total: {
@@ -50,33 +54,36 @@ export default {
             type: Number,
             required: true,
         },
-        perPage: {
-            type: Number,
-            default: 15,
-        },
         page: {
             type: Number,
             required: true,
         },
     },
-    computed: {
-        isLastPage() {
-            return this.page >= Math.ceil(this.total / this.perPage);
-        },
-        isFirstPage() {
-            return this.page === 1;
-        },
-    },
-    methods: {
-        onClickNext() {
-            if (!this.isLastPage) this.onChangePage(this.page + 1);
-        },
-        onClickPrev() {
-            if (!this.isFirstPage) this.onChangePage(this.page - 1);
-        },
-        onChangePage(page) {
-            this.$emit("update:page", page);
-        },
+    setup(props, { emit }) {
+        const isLastPage = computed(() => {
+            return props.page >= Math.ceil(props.total / PER_PAGE);
+        });
+        const isFirstPage = computed(() => {
+            return props.page === 1;
+        });
+        const onChangePage = (page) => {
+            emit("update:page", page);
+        };
+        const onClickNext = () => {
+            if (!isLastPage.value) onChangePage(props.page + 1);
+        };
+        const onClickPrev = () => {
+            if (!isFirstPage.value) onChangePage(props.page - 1);
+        };
+
+        return {
+            perPage: PER_PAGE,
+            isLastPage,
+            isFirstPage,
+            onClickNext,
+            onClickPrev,
+            onChangePage,
+        };
     },
 };
 </script>

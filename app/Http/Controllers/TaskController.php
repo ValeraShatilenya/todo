@@ -17,24 +17,29 @@ class TaskController extends Controller implements TaskInterface
     /**
      * Get Not Completed tasks Builder.
      */
-    private function getNotCompletedBuilder(int $userId = null): Builder
+    private function getNotCompletedBuilder(int $userId = null, string $sort = 'dateTime'): Builder
     {
         $userId = $userId ?? Auth::user()->id;
-        return Task::select('id', 'title', 'description', 'created_at as dateTime')
+        $builder = Task::select('id', 'title', 'description', 'status', 'created_at as dateTime')
             ->with(['files' => function ($query) {
                 $query->select('id', 'name', 'task_id');
             }])
             ->notCompleted()
-            ->userId($userId)
-            ->orderByDesc('created_at');
+            ->userId($userId);
+        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
+        else if ($sort === 'status') {
+            $builder->orderBy('status')
+                ->orderByDesc('dateTime');
+        }
+        return $builder;
     }
 
     /**
      * Get Not Completed tasks data.
      */
-    public function getNotCompletedData(int $userId = null, int $page = null, int $perPage = null)
+    public function getNotCompletedData(int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
     {
-        $builder = $this->getNotCompletedBuilder($userId);
+        $builder = $this->getNotCompletedBuilder($userId, $sort);
         if ($page && $perPage) {
             $builder->forPage($page, $perPage);
         }
@@ -54,30 +59,36 @@ class TaskController extends Controller implements TaskInterface
         $page = $request->input('page', 1);
         $perPage = $request->input('perPage', 15);
         if ($perPage > 100)  $perPage = 100;
-        return ['data' => $this->getNotCompletedData(null, $page, $perPage), 'total' => $this->getNotCompletedBuilder(null)->count()];
+        $sort = $request->input('sort', 'dateTime');
+        return ['data' => $this->getNotCompletedData(null, $page, $perPage, $sort), 'total' => $this->getNotCompletedBuilder(null)->count()];
     }
 
     /**
      * Get Not Completed tasks Builder.
      */
-    private function getCompletedBuilder(int $userId = null): Builder
+    private function getCompletedBuilder(int $userId = null, string $sort = 'dateTime'): Builder
     {
         $userId = $userId ?? Auth::user()->id;
-        return Task::select('id', 'title', 'description', 'completed as dateTime')
+        $builder = Task::select('id', 'title', 'description', 'status', 'completed as dateTime')
             ->with(['files' => function ($query) {
                 $query->select('id', 'name', 'task_id');
             }])
             ->completed()
-            ->userId($userId)
-            ->orderByDesc('completed');
+            ->userId($userId);
+        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
+        else if ($sort === 'status') {
+            $builder->orderBy('status')
+                ->orderByDesc('dateTime');
+        }
+        return $builder;
     }
 
     /**
      * Get Completed tasks data.
      */
-    public function getCompletedData(int $userId = null, int $page = null, int $perPage = null)
+    public function getCompletedData(int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
     {
-        $builder = $this->getCompletedBuilder($userId);
+        $builder = $this->getCompletedBuilder($userId, $sort);
         if ($page && $perPage) {
             $builder->forPage($page, $perPage);
         }
@@ -97,7 +108,8 @@ class TaskController extends Controller implements TaskInterface
         $page = $request->input('page', 1);
         $perPage = $request->input('perPage', 15);
         if ($perPage > 100)  $perPage = 100;
-        return ['data' => $this->getCompletedData(null, $page, $perPage), 'total' => $this->getCompletedBuilder(null)->count()];
+        $sort = $request->input('sort', 'dateTime');
+        return ['data' => $this->getCompletedData(null, $page, $perPage, $sort), 'total' => $this->getCompletedBuilder(null)->count()];
     }
 
     /**
@@ -136,7 +148,7 @@ class TaskController extends Controller implements TaskInterface
      */
     public function create(TaskRequest $request)
     {
-        $dataForCreate = $request->only('title', 'description');
+        $dataForCreate = $request->only('title', 'status', 'description');
         $dataForCreate['user_id'] = Auth::user()->id;
         $task = Task::create($dataForCreate);
 
@@ -168,7 +180,7 @@ class TaskController extends Controller implements TaskInterface
     public function update(TaskRequest $request, int $id)
     {
         $task = Task::currentUser()->findOrFail($id);
-        $task->update($request->only('title', 'description'));
+        $task->update($request->only('title', 'status', 'description'));
         $oldFiles = $request->oldFiles ? explode(',', $request->oldFiles) : [];
 
         // delete
@@ -211,8 +223,6 @@ class TaskController extends Controller implements TaskInterface
     {
         $user = Auth::user();
 
-        $job = new SendPDFJob($user, $this, [$user->id]);
-        $job->handle();
-        // dispatch(new SendPDFJob($user, $this, [$user->id]));
+        dispatch(new SendPDFJob($user, $this, [$user->id]));
     }
 }
