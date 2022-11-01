@@ -32,7 +32,7 @@
                 </div>
             </div>
         </nav>
-        <div class="invisible md:h-16 w-full"></div>
+        <div class="invisible h-8 md:h-16 w-full">&nbsp;</div>
     </div>
 </template>
 
