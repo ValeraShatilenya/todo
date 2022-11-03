@@ -1,12 +1,15 @@
-import { reactive, watch } from "vue";
+import { reactive, watch, inject } from "vue";
 import axios from "axios";
+// utils
 import downloadBlob from "../utils/downloadBlob.utils";
 import prepareFormData from "../utils/prepareFormData.utils";
-
+// notification
+import { injectionKeyNotifier } from "../components/notification/custom-notifier";
+// constants
 import { PER_PAGE } from "../constants";
 
 export default function (selectedTask) {
-    console.log(PER_PAGE);
+    const notify = inject(injectionKeyNotifier);
 
     const data = reactive({
         completed: { data: [], page: 1, total: 0, sort: "dateTime" },
@@ -25,7 +28,10 @@ export default function (selectedTask) {
             data.notCompleted.data = tasks.data;
             data.notCompleted.total = tasks.total;
         } catch (e) {
-            window.alert("Ошибка взятия данных!");
+            notify({
+                message: "Ошибка получения не выполненных задач!",
+                type: "error",
+            });
         }
     };
 
@@ -41,7 +47,10 @@ export default function (selectedTask) {
             data.completed.data = tasks.data;
             data.completed.total = tasks.total;
         } catch (e) {
-            window.alert("Ошибка взятия данных!");
+            notify({
+                message: "Ошибка получения выполненных задач!",
+                type: "error",
+            });
         }
     };
 
@@ -52,7 +61,10 @@ export default function (selectedTask) {
             });
             downloadBlob(data, name);
         } catch (e) {
-            window.alert("Ошибка скачивания данных!");
+            notify({
+                message: "Ошибка скачивания данных!",
+                type: "error",
+            });
         }
     };
 
@@ -69,8 +81,10 @@ export default function (selectedTask) {
                 },
             });
         } catch (e) {
-            console.error(e);
-            window.alert("Ошибка создания!");
+            notify({
+                message: "Ошибка создания!",
+                type: "error",
+            });
         }
         await getNotCompleted();
     };
@@ -81,7 +95,10 @@ export default function (selectedTask) {
                 type: type === "notCompleted",
             });
         } catch (e) {
-            window.alert("Ошибка обновления!");
+            notify({
+                message: "Ошибка обновления!",
+                type: "error",
+            });
         }
         const otherType = Object.keys(functionByType).find(
             (key) => key !== type
@@ -106,7 +123,10 @@ export default function (selectedTask) {
                 }
             );
         } catch (e) {
-            window.alert("Ошибка обновления!");
+            notify({
+                message: "Ошибка обновления!",
+                type: "error",
+            });
         }
         await getNotCompleted();
     };
@@ -115,7 +135,10 @@ export default function (selectedTask) {
         try {
             await axios.delete(`/task/${id}`);
         } catch (e) {
-            window.alert("Ошибка удаления!");
+            notify({
+                message: "Ошибка удаления!",
+                type: "error",
+            });
         }
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
@@ -125,9 +148,14 @@ export default function (selectedTask) {
     const sendPdfToMail = async () => {
         try {
             await axios.post("/task/pdf");
-            window.alert("Файл отправлен на почту!");
+            notify({
+                message: "Файл отправлен на почту!",
+            });
         } catch (e) {
-            window.alert("Ошибка!");
+            notify({
+                message: "Ошибка!",
+                type: "error",
+            });
         }
     };
 

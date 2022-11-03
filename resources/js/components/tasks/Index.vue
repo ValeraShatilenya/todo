@@ -122,7 +122,7 @@
                             </button>
                             <button
                                 title="Удалить"
-                                @click="onDelete(task.id, 'notCompleted')"
+                                @click="onDelete(task, 'notCompleted')"
                                 class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
                             >
                                 <font-awesome-icon
@@ -212,7 +212,7 @@
                         </button>
                         <template v-if="canEdit(task)">
                             <button
-                                @click="onDelete(task.id, 'completed')"
+                                @click="onDelete(task, 'completed')"
                                 class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
                             >
                                 <font-awesome-icon
@@ -254,7 +254,8 @@ import { STATUSES, TASK_SORTS } from "../../constants";
 import useTasks from "../../composables/tasks";
 import useGroups from "../../composables/groups";
 import useGroupTasks from "../../composables/groupTasks";
-import { computed, onMounted, ref, watch } from "vue";
+import { injectionKeyConfirm } from "../confirm/custom-confirm";
+import { computed, inject, onMounted, ref, watch } from "vue";
 
 export default {
     components: {
@@ -286,6 +287,8 @@ export default {
             {}
         );
 
+        const confirm = inject(injectionKeyConfirm);
+
         onMounted(async () => {
             groups.value = await getGroups();
             selectedGroup.value = groups.value[0];
@@ -315,9 +318,18 @@ export default {
             selectedTask.value = {};
         };
 
-        const onDelete = async (id, type) => {
-            if (selectedTask.value.id === id) selectedTask.value = {};
-            await computedTasks.value.destroy(id, type);
+        const onDelete = async ({ id, title }, type) => {
+            confirm({
+                confirmText: "Уверен",
+                confirmColorClass:
+                    "bg-red-600 hover:bg-red-700 active:bg-red-800 focus:border-red-900",
+                title: "Удаление задачи",
+                message: `Вы уверены, что желаете удалить задачу с заголовком <b>${title}</b>?`,
+                onConfirm: () => {
+                    if (selectedTask.value.id === id) selectedTask.value = {};
+                    computedTasks.value.destroy(id, type);
+                },
+            });
         };
 
         const onChangeCompleted = async (id, type) => {
