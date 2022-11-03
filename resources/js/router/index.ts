@@ -3,9 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Task from "../components/tasks/Index.vue";
 import Group from "../components/groups/Index.vue";
 
-import { PER_PAGE } from "../constants";
-
-export default (props) =>
+export default (userId: number) =>
     createRouter({
         history: createWebHistory(),
         routes: [
@@ -14,7 +12,7 @@ export default (props) =>
                 component: Task,
                 name: "task",
                 props: {
-                    userId: props.userId,
+                    userId,
                 },
             },
             {

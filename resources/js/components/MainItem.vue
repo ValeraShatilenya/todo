@@ -32,7 +32,14 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
+import { computed, ComputedRef } from "vue";
+import { IStatuse } from "../constants";
+
+interface IStatuseObject {
+    [key: number]: IStatuse;
+}
+
 export default {
     props: {
         status: {
@@ -41,14 +48,18 @@ export default {
         },
         statuses: {
             required: false,
-            type: Object,
+            type: Object as () => IStatuseObject,
             default: () => ({}),
         },
     },
-    computed: {
-        currentStatus() {
-            return this.statuses?.[this.status] ?? null;
-        },
+    setup(props: any) {
+        const currentStatus: ComputedRef<IStatuse | null> = computed(() => {
+            if (!props.status) return null;
+            return props.statuses?.[props.status] ?? null;
+        });
+        return {
+            currentStatus,
+        };
     },
 };
 </script>

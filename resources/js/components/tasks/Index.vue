@@ -34,10 +34,9 @@
     <div class="mb-6">
         <update-task
             :task="selectedTask"
-            :statuses="statuses"
             @create="onCreate"
             @update="onUpdate"
-            @unselectTask="selectedTask = {}"
+            @unselectTask="selectedTask = null"
         />
     </div>
 
@@ -102,7 +101,9 @@
                         <button
                             title="Выполнено"
                             class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
-                            @click="onChangeCompleted(task.id, 'notCompleted')"
+                            @click="
+                                onChangeCompleted(task.id, Types.notCompleted)
+                            "
                         >
                             <font-awesome-icon
                                 icon="fa-solid fa-hand-point-right"
@@ -122,7 +123,7 @@
                             </button>
                             <button
                                 title="Удалить"
-                                @click="onDelete(task, 'notCompleted')"
+                                @click="onDelete(task, Types.notCompleted)"
                                 class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
                             >
                                 <font-awesome-icon
@@ -203,7 +204,7 @@
                     <template #buttons>
                         <button
                             class="px-3 py-2 bg-green-600 border border-transparent h-max rounded-xl text-white hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:ring ring-green-400 transition ease-in-out duration-150"
-                            @click="onChangeCompleted(task.id, 'completed')"
+                            @click="onChangeCompleted(task.id, Types.completed)"
                         >
                             <font-awesome-icon
                                 icon="fa-solid fa-hand-point-left"
@@ -212,7 +213,7 @@
                         </button>
                         <template v-if="canEdit(task)">
                             <button
-                                @click="onDelete(task, 'completed')"
+                                @click="onDelete(task, Types.completed)"
                                 class="px-3 py-2 bg-red-500 border border-transparent h-max rounded-xl text-white hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:ring ring-red-300 transition ease-in-out duration-150"
                             >
                                 <font-awesome-icon
@@ -242,20 +243,32 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import UpdateTask from "./UpdateTask.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
 import MainItem from "../MainItem.vue";
 import DropdownSort from "../DropdownSort.vue";
 
-import { STATUSES, TASK_SORTS } from "../../constants";
+import { IStatuse, STATUSES, TASK_SORTS } from "../../constants";
 
 import useTasks from "../../composables/tasks";
 import useGroups from "../../composables/groups";
 import useGroupTasks from "../../composables/groupTasks";
+
 import { injectionKeyConfirm } from "../confirm/custom-confirm";
+import { IConfirm } from "../confirm/interfaces";
+
 import { computed, inject, onMounted, ref, watch } from "vue";
+import type { Ref } from "vue";
+
+import { ITaskGroup } from "../../composables/groupInterfaces";
+import {
+    IFile,
+    IMainTaskData,
+    ITask,
+    Types,
+} from "../../composables/taskInterfaces";
 
 export default {
     components: {
@@ -272,53 +285,54 @@ export default {
             default: 0,
         },
     },
-    setup(props) {
-        const selectedTask = ref({});
-        const selectedGroup = ref({});
-        const tasks = useTasks(selectedTask);
+    setup(props: any) {
+        const selectedTask: Ref<ITask | null> = ref(null);
+        const selectedGroup: Ref<ITaskGroup | null> = ref(null);
+        const tasks: IMainTaskData = useTasks(selectedTask);
 
-        const groups = ref([]);
+        const groups: Ref = ref([]);
         const { getGroupsForTasks: getGroups } = useGroups();
 
-        const groupTasks = useGroupTasks(selectedTask, selectedGroup);
-
-        const statusesByValue = STATUSES.reduce(
-            (obj, status) => ((obj[status.value] = status), obj),
-            {}
+        const groupTasks: IMainTaskData = useGroupTasks(
+            selectedTask,
+            selectedGroup
         );
 
-        const confirm = inject(injectionKeyConfirm);
+        interface IStatuseObject {
+            [key: number]: IStatuse;
+        }
+        const statusesByValue = STATUSES.reduce(
+            (obj, status) => ((obj[status.value] = status), obj),
+            <IStatuseObject>{}
+        );
+
+        const confirm = inject(injectionKeyConfirm) as IConfirm;
 
         onMounted(async () => {
             groups.value = await getGroups();
             selectedGroup.value = groups.value[0];
         });
 
-        watch(selectedGroup, () => {
-            if (selectedGroup.value.id) {
-                groupTasks.getNotCompleted(selectedGroup.value.id);
-                groupTasks.getCompleted(selectedGroup.value.id);
-            } else {
-                tasks.getNotCompleted();
-                tasks.getCompleted();
-            }
-            selectedTask.value = {};
-        });
-
         const computedTasks = computed(() => {
-            return selectedGroup.value.id ? groupTasks : tasks;
+            return selectedGroup.value?.id ? groupTasks : tasks;
         });
 
-        const onCreate = async (data) => {
+        watch(selectedGroup, () => {
+            computedTasks.value.getNotCompleted();
+            computedTasks.value.getCompleted();
+            selectedTask.value = null;
+        });
+
+        const onCreate = async (data: object) => {
             await computedTasks.value.create(data);
         };
 
-        const onUpdate = async (data) => {
+        const onUpdate = async (data: object) => {
             await computedTasks.value.update(data);
-            selectedTask.value = {};
+            selectedTask.value = null;
         };
 
-        const onDelete = async ({ id, title }, type) => {
+        const onDelete = ({ id, title }: ITask, type: Types) => {
             confirm({
                 confirmText: "Уверен",
                 confirmColorClass:
@@ -326,21 +340,22 @@ export default {
                 title: "Удаление задачи",
                 message: `Вы уверены, что желаете удалить задачу с заголовком <b>${title}</b>?`,
                 onConfirm: () => {
-                    if (selectedTask.value.id === id) selectedTask.value = {};
+                    if (selectedTask.value?.id === id)
+                        selectedTask.value = null;
                     computedTasks.value.destroy(id, type);
                 },
             });
         };
 
-        const onChangeCompleted = async (id, type) => {
+        const onChangeCompleted = async (id: number, type: Types) => {
             await computedTasks.value.changeCompleted(id, type);
         };
 
-        const canEdit = (task) => {
-            return !selectedGroup.value.id || task.canEdit;
+        const canEdit = (task: ITask) => {
+            return !selectedGroup.value?.id || task.canEdit;
         };
 
-        const downloadTaskFile = (file) => {
+        const downloadTaskFile = (file: IFile) => {
             return computedTasks.value.downloadTaskFile(file);
         };
 
@@ -349,7 +364,7 @@ export default {
         };
 
         return {
-            statuses: STATUSES,
+            Types: Types,
             statusesByValue: statusesByValue,
             taskSorts: TASK_SORTS,
             usersId: props.userId,

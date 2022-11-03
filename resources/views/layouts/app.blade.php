@@ -19,14 +19,9 @@
 </head>
 
 <body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100" id="app" data-auth="{{ Auth::check() ? Auth::user()->id : 0 }}">
-        @auth
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
-        @endauth
-    </div>
+    @auth
+    <div class="min-h-screen bg-gray-100" id="app" data-auth="{{ Auth::check() ? Auth::user()->id : 0 }}"></div>
+     @endauth
 </body>
 
 </html>

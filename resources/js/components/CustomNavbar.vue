@@ -1,58 +1,52 @@
 <template>
-    <div>
-        <nav class="bg-white border-b border-gray-100 fixed w-full z-20">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="flex justify-between md:h-16">
-                    <div class="flex">
-                        <router-link
-                            to="/"
-                            tag="button"
-                            class="button"
-                            active-class="active"
-                        >
-                            <div class="flex items-center h-full">Главная</div>
-                        </router-link>
-                        <router-link
-                            to="/group"
-                            tag="button"
-                            class="button"
-                            active-class="active"
-                        >
-                            <div class="flex items-center h-full">Группы</div>
-                        </router-link>
-                    </div>
-
-                    <div class="flex items-center tracking-widest font-medium">
-                        TODO
-                    </div>
-
-                    <button class="button" @click="logout">
-                        <div class="flex items-center h-full">Выйти</div>
-                    </button>
+    <nav class="bg-white border-b border-gray-100 fixed w-full z-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between md:h-16">
+                <div class="flex">
+                    <router-link
+                        to="/"
+                        tag="button"
+                        class="button"
+                        active-class="active"
+                    >
+                        <div class="flex items-center h-full">Главная</div>
+                    </router-link>
+                    <router-link
+                        to="/group"
+                        tag="button"
+                        class="button"
+                        active-class="active"
+                    >
+                        <div class="flex items-center h-full">Группы</div>
+                    </router-link>
                 </div>
+
+                <div class="flex items-center tracking-widest font-medium">
+                    TODO
+                </div>
+                <button class="button" @click="logout">
+                    <div class="flex items-center h-full">Выйти</div>
+                </button>
             </div>
-        </nav>
-        <div class="invisible h-8 md:h-16 w-full">&nbsp;</div>
-    </div>
+        </div>
+    </nav>
+    <div class="invisible h-8 md:h-16 w-full"></div>
 </template>
 
-<script>
+<script lang="ts">
 import axios from "axios";
+
 export default {
-    props: {
-        name: {
-            type: String,
-            required: false,
-            default: "",
-        },
-    },
-    methods: {
-        async logout() {
+    setup() {
+        const logout = async (): Promise<any> => {
             try {
                 await axios.post("/logout");
             } catch (e) {}
             location.href = "/";
-        },
+        };
+        return {
+            logout,
+        };
     },
 };
 </script>

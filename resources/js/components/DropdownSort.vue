@@ -44,33 +44,47 @@
     </div>
 </template>
 
-<script>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+<script lang="ts">
+import { computed, ComputedRef, onMounted, onUnmounted, Ref, ref } from "vue";
+
+interface IDataItem {
+    value: any;
+    title: string;
+    [key: string]: any;
+}
 
 export default {
     props: {
         data: {
             required: true,
-            type: Array,
+            type: Array as () => IDataItem[],
         },
         modelValue: {
             required: true,
         },
     },
-    setup(props, { emit }) {
+    setup(props: any, { emit }: any) {
         const showDropdown = ref(false);
 
-        const selectedItem = computed(() => {
-            return props.data.find(({ value }) => value === props.modelValue);
+        interface IDataItem {
+            value: any;
+            [key: string]: any;
+        }
+
+        const selectedItem: ComputedRef<any> = computed(() => {
+            const data = props.data as IDataItem[];
+            return data.find(({ value }) => value === props.modelValue);
         });
 
-        const buttonElement = ref(null);
-        const dropdownElement = ref(null);
+        const buttonElement: Ref<HTMLElement | null> = ref(null);
+        const dropdownElement: Ref<HTMLElement | null> = ref(null);
 
-        const clickedOutside = (event) => {
+        const clickedOutside = (event: Event): void => {
+            const el = event.target as HTMLElement;
             if (
-                buttonElement.value?.contains(event.target) ||
-                dropdownElement.value?.contains(event.target)
+                !el ||
+                buttonElement.value?.contains(el) ||
+                dropdownElement.value?.contains(el)
             )
                 return;
             showDropdown.value = false;
@@ -83,7 +97,7 @@ export default {
             document?.removeEventListener("click", clickedOutside);
         });
 
-        const changeValue = (value) => {
+        const changeValue = (value: any) => {
             emit("update:modelValue", value);
             showDropdown.value = false;
         };

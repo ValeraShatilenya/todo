@@ -39,10 +39,10 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import { PER_PAGE } from "../constants";
 
-import { computed } from "vue";
+import { computed, ComputedRef } from "vue";
 
 export default {
     props: {
@@ -59,20 +59,20 @@ export default {
             required: true,
         },
     },
-    setup(props, { emit }) {
-        const isLastPage = computed(() => {
+    setup(props: any, { emit }: any) {
+        const isLastPage: ComputedRef<boolean> = computed(() => {
             return props.page >= Math.ceil(props.total / PER_PAGE);
         });
-        const isFirstPage = computed(() => {
+        const isFirstPage: ComputedRef<boolean> = computed(() => {
             return props.page === 1;
         });
-        const onChangePage = (page) => {
+        const onChangePage = (page: number) => {
             emit("update:page", page);
         };
-        const onClickNext = () => {
+        const onClickNext = (): void => {
             if (!isLastPage.value) onChangePage(props.page + 1);
         };
-        const onClickPrev = () => {
+        const onClickPrev = (): void => {
             if (!isFirstPage.value) onChangePage(props.page - 1);
         };
 

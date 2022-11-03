@@ -22,25 +22,35 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import { reactive } from "vue";
+
+import { message } from "./interfaces";
+
+const defaultMessage: message = {
+    message: "",
+    type: "default",
+    duration: 2000,
+    infinity: false,
+};
 
 export default {
     setup() {
-        const messages = reactive(new Map());
-        let id = 0;
+        const messages: Map<number, object> = reactive(new Map());
+        let id: number = 0;
 
-        const notify = (message) => {
+        const notify = (message: message): void => {
             const newId = ++id;
-            messages.set(newId, message);
-            message.duration ||= 2000;
-            message.duration !== "Infinity" &&
+            const newMessage = { ...defaultMessage, ...message };
+            messages.set(newId, newMessage);
+            if (!newMessage.infinity) {
                 setTimeout(() => {
                     messages.delete(newId);
-                }, message.duration);
+                }, newMessage.duration);
+            }
         };
 
-        const backgroundClass = (type) => {
+        const backgroundClass = (type: string): string => {
             if (type === "error") return "bg-red-500/90";
             return "bg-neutral-800/90";
         };

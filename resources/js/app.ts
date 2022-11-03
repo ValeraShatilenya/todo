@@ -3,8 +3,10 @@ require("./bootstrap");
 require("alpinejs");
 
 import { createApp } from "vue";
-import router from "./router";
-import CustomNavbar from "./components/CustomNavbar.vue";
+import router from "./router/index";
+import Notifier from "./components/notification/custom-notifier";
+import Confirm from "./components/confirm/custom-confirm";
+import App from './components/App.vue'
 
 /* import the fontawesome core */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -15,12 +17,16 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 /* add icons to the library */
 library.add(fas);
 
-const app = document.querySelector("#app");
-const userId = +app?.dataset?.auth;
-userId && app.removeAttribute("data-auth");
+const app: HTMLInputElement | null = document.querySelector("#app");
+let userId: number = 0;
+if(app) {
+    userId = +(app?.dataset?.auth || 0);
+    userId && app.removeAttribute("data-auth");
+}
 
-createApp({})
-    .use(router({ userId }))
+createApp(App)
+    .use(router(userId))
+    .use(Notifier)
+    .use(Confirm)
     .component("font-awesome-icon", FontAwesomeIcon)
-    .component("custom-navbar", CustomNavbar)
     .mount("#app");

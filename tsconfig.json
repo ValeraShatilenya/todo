@@ -1,0 +1,14 @@
+{
+    "files": [
+        "ts-custom.d.ts"
+    ],
+    "compilerOptions": {
+      "target": "esnext",
+      "module": "esnext",
+      "strict": true,
+      "isolatedModules": true,
+      "noImplicitAny": false,
+      "jsx": "preserve",
+      "moduleResolution": "node",
+    }
+  }

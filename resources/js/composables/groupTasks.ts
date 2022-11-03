@@ -1,18 +1,32 @@
-import { reactive, watch } from "vue";
+import { inject, reactive, watch } from "vue";
+import type { Ref } from "vue";
+
 import axios from "axios";
+// utils
 import downloadBlob from "../utils/downloadBlob.utils";
 import prepareFormData from "../utils/prepareFormData.utils";
-
+// constants
 import { PER_PAGE } from "../constants";
+// notification
+import { injectionKeyNotifier } from "../components/notification/custom-notifier";
+import { INotify } from "../components/notification/interfaces";
+// interfaces
+import { ITask, IFile, Types, IMainTaskData } from "./taskInterfaces";
+import { ITaskGroup } from "./groupInterfaces";
 
-export default function (selectedTask, selectedGroup) {
+export default function (selectedTask: Ref<ITask | null>, selectedGroup: Ref<ITaskGroup | null>): IMainTaskData {
+    const notify = inject(injectionKeyNotifier) as INotify;
+
     const data = reactive({
         completed: { data: [], page: 1, total: 0, sort: "dateTime" },
         notCompleted: { data: [], page: 1, total: 0, sort: "dateTime" },
     });
 
-    const getNotCompleted = async () => {
+    const getNotCompleted = async (): Promise<any> => {
         try {
+            if(!selectedGroup.value) {
+                throw new Error("Группа не выбрана!");
+            }
             const { data: tasks } = await axios.get(
                 `/group-task/${selectedGroup.value.id}/notCompleted`,
                 {
@@ -26,12 +40,18 @@ export default function (selectedTask, selectedGroup) {
             data.notCompleted.data = tasks.data;
             data.notCompleted.total = tasks.total;
         } catch (e) {
-            window.alert("Ошибка взятия данных!");
+            notify({
+                message: "Ошибка получения не выполненных задач!",
+                type: "error",
+            });
         }
     };
 
-    const getCompleted = async () => {
+    const getCompleted = async (): Promise<any> => {
         try {
+            if(!selectedGroup.value) {
+                throw new Error("Группа не выбрана!");
+            }
             const { data: tasks } = await axios.get(
                 `/group-task/${selectedGroup.value.id}/completed`,
                 {
@@ -45,16 +65,24 @@ export default function (selectedTask, selectedGroup) {
             data.completed.data = tasks.data;
             data.completed.total = tasks.total;
         } catch (e) {
-            window.alert("Ошибка взятия данных!");
+            notify({
+                message: "Ошибка получения выполненных задач!",
+                type: "error",
+            });
         }
     };
 
     const functionByType = {
-        notCompleted: getNotCompleted,
-        completed: getCompleted,
+        [Types.notCompleted]: getNotCompleted,
+        [Types.completed]: getCompleted,
     };
 
-    const downloadTaskFile = async ({ id, name }) => {
+    const otherType = {
+        [Types.notCompleted]: Types.completed,
+        [Types.completed]: Types.notCompleted,
+    };
+
+    const downloadTaskFile = async ({ id, name }: IFile): Promise<any> => {
         try {
             const { data } = await axios.get(
                 `/group-task/file/${id}/download`,
@@ -68,8 +96,11 @@ export default function (selectedTask, selectedGroup) {
         }
     };
 
-    const create = async (take) => {
+    const create = async (take: object): Promise<any> => {
         try {
+            if(!selectedGroup.value) {
+                throw new Error("Группа не выбрана!");
+            }
             await axios.post(
                 `/group-task/group/${selectedGroup.value.id}`,
                 prepareFormData(take),
@@ -80,33 +111,38 @@ export default function (selectedTask, selectedGroup) {
                 }
             );
         } catch (e) {
-            console.error(e);
-            window.alert("Ошибка создания!");
+            notify({
+                message: "Ошибка создания!",
+                type: "error",
+            });
         }
         await getNotCompleted();
     };
 
-    const changeCompleted = async (id, type) => {
+    const changeCompleted = async (id: number, type: Types): Promise<any> => {
         try {
             await axios.patch(`/group-task/${id}/changeCompleted`, {
                 type: type === "notCompleted",
             });
         } catch (e) {
-            window.alert("Ошибка обновления!");
+            notify({
+                message: "Ошибка обновления!",
+                type: "error",
+            });
         }
-        const otherType = Object.keys(functionByType).find(
-            (key) => key !== type
-        );
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
-            functionByType[otherType]?.();
+            functionByType[otherType[type]]?.();
         } else {
             await Promise.all([getCompleted(), getNotCompleted()]);
         }
     };
 
-    const update = async (take) => {
+    const update = async (take: object): Promise<any>  => {
         try {
+            if(!selectedTask.value) {
+                throw new Error("Задача не выбрана");
+            }
             await axios.post(
                 `/group-task/${selectedTask.value.id}`,
                 prepareFormData(take),
@@ -117,39 +153,53 @@ export default function (selectedTask, selectedGroup) {
                 }
             );
         } catch (e) {
-            window.alert("Ошибка обновления!");
+            notify({
+                message: "Ошибка обновления!",
+                type: "error",
+            });
         }
         await getNotCompleted();
     };
 
-    const destroy = async (id, type) => {
+    const destroy = async (id: number, type: Types): Promise<any> => {
         try {
             await axios.delete(`/group-task/${id}`);
         } catch (e) {
-            window.alert("Ошибка удаления!");
+            notify({
+                message: "Ошибка удаления!",
+                type: "error",
+            });
         }
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
         } else await functionByType[type]?.();
     };
 
-    const sendPdfToMail = async () => {
+    const sendPdfToMail = async (): Promise<any> => {
         try {
+            if(!selectedGroup.value) {
+                throw new Error("Группа не выбрана!");
+            }
             await axios.post(`/group-task/${selectedGroup.value.id}/pdf`);
-            window.alert("Файл отправлен на почту!");
+            notify({
+                message: "Файл отправлен на почту!",
+            });
         } catch (e) {
-            window.alert("Ошибка!");
+            notify({
+                message: "Ошибка!",
+                type: "error",
+            });
         }
     };
 
     watch([() => data.notCompleted.page, () => data.notCompleted.sort], () => {
         getNotCompleted();
-        selectedTask.value = {};
+        selectedTask.value = null;
     });
 
     watch([() => data.completed.page, () => data.completed.sort], () => {
         getCompleted();
-        selectedTask.value = {};
+        selectedTask.value = null;
     });
 
     return {

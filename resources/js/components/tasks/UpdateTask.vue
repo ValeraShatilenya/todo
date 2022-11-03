@@ -51,7 +51,7 @@
         </div>
         <div class="flex space-x-4 text-xs text-white tracking-wider">
             <button
-                v-if="task.id"
+                v-if="task"
                 class="w-24 py-2 uppercase rounded-xl focus:outline-none focus:ring transition ease-in-out duration-150 bg-purple-500 hover:bg-purple-700 active:bg-purple-900 focus:border-purple-900 ring-purple-300 disabled:opacity-50"
                 :disabled="isNotValidData"
                 @click="onClickUpdateButton"
@@ -74,7 +74,7 @@
                 Очистить
             </button>
             <button
-                v-if="task.id"
+                v-if="task"
                 class="w-24 py-2 uppercase bg-gray-500 rounded-xl hover:bg-gray-600 active:bg-gray-700 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 transition ease-in-out duration-150"
                 @click="onClickCancelButton"
             >
@@ -84,9 +84,12 @@
     </div>
 </template>
 
-<script>
-import { computed, ref, watchEffect } from "vue";
+<script lang="ts">
+import { computed, Ref, ref, watchEffect } from "vue";
 import DropdownRadio from "../DropdownRadio.vue";
+
+import { STATUSES } from "../../constants";
+import { IFile } from "../../composables/taskInterfaces";
 
 export default {
     components: {
@@ -94,33 +97,30 @@ export default {
     },
     props: {
         task: {
-            required: false,
-            type: Object,
-            default: () => ({}),
-        },
-        statuses: {
             required: true,
-            type: Array,
+            type: [Object, null],
+            default: null,
         },
     },
     emits: ["create", "update", "unselectTask"],
-    setup(props, { emit }) {
+    setup(props: any, { emit }: any) {
         const title = ref("");
-        const status = ref(props.statuses.at(-1).value);
+        const status = ref(STATUSES.at(-1)?.value);
         const description = ref("");
-        const files = ref([]);
-        const inputFile = ref(null);
+
+        const files: Ref<Array<IFile | File>> = ref([]);
+        const inputFile: Ref<HTMLInputElement | null> = ref(null);
 
         const clean = () => {
             title.value = "";
-            status.value = props.statuses.at(-1).value;
+            status.value = STATUSES.at(-1)?.value;
             description.value = "";
             files.value = [];
         };
 
         watchEffect(() => {
             clean();
-            if (props.task.id) {
+            if (props.task) {
                 title.value = props.task.title;
                 status.value = props.task.status;
                 description.value = props.task.description;
@@ -153,10 +153,10 @@ export default {
             if (isNotValidData.value) {
                 return;
             }
-            const newFiles = [];
-            const oldFiles = [];
+            const newFiles: File[] = [];
+            const oldFiles: number[] = [];
             files.value.forEach((file) => {
-                file.id ? oldFiles.push(file.id) : newFiles.push(file);
+                "id" in file ? oldFiles.push(file.id) : newFiles.push(file);
             });
             emit("update", {
                 title: title.value,
@@ -173,18 +173,27 @@ export default {
             emit("unselectTask");
         };
 
-        const onFileChange = (event) => {
-            const file = event.target.files[0] || event.dataTransfer.files[0];
-            files.value.push(file);
-            inputFile.value.value = "";
+        type HTMLInputFileEvent = Event & {
+            target: HTMLInputElement;
+            dataTransfer: DataTransfer;
         };
 
-        const onDeleteFile = (index) => {
+        const onFileChange = (event: HTMLInputFileEvent) => {
+            const file =
+                event.target.files?.[0] || event.dataTransfer?.files[0];
+            files.value.push(file);
+            if (inputFile.value) {
+                inputFile.value.value = "";
+            }
+        };
+
+        const onDeleteFile = (index: number) => {
             files.value.splice(index, 1);
         };
 
         return {
             title,
+            statuses: STATUSES,
             status,
             description,
             files,

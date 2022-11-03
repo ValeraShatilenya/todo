@@ -16,7 +16,7 @@
 
         <div class="flex space-x-4 text-xs text-white tracking-wider">
             <button
-                v-if="group.id"
+                v-if="group"
                 class="w-24 py-2 uppercase rounded-xl focus:outline-none focus:ring transition ease-in-out duration-150 disabled:opacity-50 bg-purple-500 hover:bg-purple-700 active:bg-purple-900 focus:border-purple-900 ring-purple-300"
                 :disabled="isNotValidData || notAccess"
                 @click="onClickUpdateButton"
@@ -39,7 +39,7 @@
                 Очистить
             </button>
             <button
-                v-if="group.id"
+                v-if="group"
                 class="w-24 py-2 uppercase bg-gray-500 rounded-xl hover:bg-gray-600 active:bg-gray-700 focus:outline-none disabled:opacity-50 focus:border-gray-900 focus:ring ring-gray-300 transition ease-in-out duration-150"
                 @click="onClickCancelButton"
             >
@@ -49,21 +49,28 @@
     </div>
 </template>
 
-<script>
-import { computed, ref, watchEffect } from "vue";
+<script lang="ts">
+import {
+    computed,
+    ComputedRef,
+    defineComponent,
+    Ref,
+    ref,
+    watchEffect,
+} from "vue";
 
 export default {
     props: {
         group: {
             required: false,
-            type: Object,
-            default: () => ({}),
+            type: [Object, null],
+            default: null,
         },
     },
     emits: ["create", "update", "unselectGroup"],
-    setup(props, { emit }) {
-        const name = ref("");
-        const description = ref("");
+    setup(props: any, { emit }: any) {
+        const name: Ref<string> = ref("");
+        const description: Ref<string> = ref("");
 
         const clean = () => {
             name.value = "";
@@ -71,7 +78,7 @@ export default {
         };
 
         watchEffect(() => {
-            if (props.group.id) {
+            if (props.group) {
                 name.value = props.group.name;
                 description.value = props.group.description;
             } else {
@@ -79,11 +86,11 @@ export default {
             }
         });
 
-        const notAccess = computed(() => {
-            return props.group.id && !props.group.canEdit;
+        const notAccess: ComputedRef<boolean> = computed(() => {
+            return props.group && !props.group.canEdit;
         });
 
-        const isNotValidData = computed(() => {
+        const isNotValidData: ComputedRef<boolean> = computed(() => {
             return !name.value || !description.value;
         });
 
@@ -91,7 +98,7 @@ export default {
             clean();
         };
 
-        const onClickCreateButton = () => {
+        const onClickCreateButton = (): void => {
             if (!name.value) {
                 return;
             }
@@ -102,7 +109,7 @@ export default {
             clean();
         };
 
-        const onClickUpdateButton = () => {
+        const onClickUpdateButton = (): void => {
             if (isNotValidData.value || notAccess.value) {
                 return;
             }
@@ -113,7 +120,7 @@ export default {
             clean();
         };
 
-        const onClickCancelButton = () => {
+        const onClickCancelButton = (): void => {
             emit("unselectGroup");
         };
 

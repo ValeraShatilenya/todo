@@ -82,12 +82,12 @@
             <div class="flex space-x-2 px-1">
                 <input
                     v-model.trim="userSearch"
-                    :disabled="!selectedGroup.id"
+                    :disabled="!selectedGroup"
                     type="text"
                     placeholder="Введите email..."
                     class="px-3 py-2 rounded-xl shadow w-full border border-gray-300 hover:border-gray-400 focus:border-gray-500 focus:outline-none disabled:opacity-50"
                 />
-                <template v-if="selectedGroup.canEdit">
+                <template v-if="selectedGroup?.canEdit">
                     <button
                         title="Добавить"
                         :disabled="!userSearch"
@@ -115,7 +115,7 @@
                         {{ user.email }}
                     </template>
                     <template #buttons>
-                        <template v-if="selectedGroup.canEdit">
+                        <template v-if="selectedGroup?.canEdit">
                             <button
                                 title="Удалить"
                                 @click="onDeleteUser(user.id)"
@@ -138,7 +138,7 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import UpdateGroup from "./UpdateGroup.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
@@ -147,7 +147,9 @@ import MainItem from "../MainItem.vue";
 import { PER_PAGE } from "../../constants";
 
 import useGroups from "../../composables/groups";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ComputedRef, onMounted, Ref, ref, watch } from "vue";
+
+import { IGroup, IUsers } from "../../composables/groupInterfaces";
 
 export default {
     components: {
@@ -170,14 +172,14 @@ export default {
             destroy,
         } = useGroups();
 
-        const userSearch = ref("");
-        const userPage = ref(1);
+        const userSearch: Ref<string> = ref("");
+        const userPage: Ref<number> = ref(1);
 
         onMounted(async () => {
             await getGroups();
         });
 
-        const filteredUsersSearch = computed(() => {
+        const filteredUsersSearch: ComputedRef<IUsers> = computed(() => {
             const search = userSearch.value.replace(
                 /[.*+?^${}()|[\]\\]/g,
                 "\\$&"
@@ -188,7 +190,7 @@ export default {
             );
         });
 
-        const filteredUsers = computed(() => {
+        const filteredUsers: ComputedRef<IUsers> = computed(() => {
             return filteredUsersSearch.value.slice(
                 PER_PAGE * (userPage.value - 1),
                 PER_PAGE * userPage.value
@@ -199,11 +201,11 @@ export default {
             userPage.value = 1;
         });
 
-        const onCreate = async (data) => {
+        const onCreate = async (data: object) => {
             await create(data);
         };
 
-        const onUpdate = async (data) => {
+        const onUpdate = async (data: object) => {
             await update(data);
             // const index = groups.data.findIndex(
             //     ({ id }) => id === selectedGroup.value.id
@@ -213,7 +215,7 @@ export default {
             // } else {
             //     selectedGroup.value = {};
             // }
-            selectedGroup.value = {};
+            selectedGroup.value = null;
         };
 
         const onAddUser = async () => {
@@ -221,14 +223,14 @@ export default {
             userSearch.value = "";
         };
 
-        const onDeleteUser = async (id) => {
+        const onDeleteUser = async (id: number) => {
             await deleteUser(id);
             if (filteredUsers.value.length === 0 && userPage.value > 1) {
                 userPage.value--;
             }
         };
 
-        const onSelectGroup = (group) => {
+        const onSelectGroup = (group: IGroup) => {
             selectedGroup.value === group
                 ? unselectGroup()
                 : (selectedGroup.value = group);

@@ -1,6 +1,13 @@
-export const PER_PAGE = 15;
+export const PER_PAGE: number = 15;
 
-export const STATUSES = [
+export interface IStatuse {
+    title: string;
+    description: string;
+    backgroundClass: string;
+    value: number;
+}
+
+export const STATUSES: IStatuse[] = [
     {
         title: "Красный",
         description: "Супер важная задача",
@@ -11,7 +18,7 @@ export const STATUSES = [
         title: "Оранжевый",
         description: "Достаточно важная задача",
         backgroundClass: "bg-orange-600 focus:ring-orange-300",
-        value: 2,
+        value: 2
     },
     {
         title: "Жёлтый",
@@ -27,7 +34,12 @@ export const STATUSES = [
     },
 ];
 
-export const TASK_SORTS = [
+interface ITaskSort {
+    title: string;
+    value: string;
+}
+
+export const TASK_SORTS: ITaskSort[] = [
     {
         title: "Дате",
         value: "dateTime",

@@ -53,35 +53,38 @@
 
 <script lang="ts">
 import { ref } from "vue";
+import type { Ref } from "vue";
+
+import { confirmData } from "./interfaces";
+
+const defaultData: confirmData = {
+    title: "",
+    message: "",
+    width: 450,
+    confirmText: "OK",
+    confirmColorClass:
+        "bg-green-600 hover:bg-green-700 active:bg-green-800 focus:border-green-900",
+    cancelText: "Отмена",
+    onConfirm: () => {},
+};
 
 export default {
     setup() {
-        const isActive = ref(false);
+        const isActive: Ref<boolean> = ref(false);
 
-        const data = ref(null);
+        const data: Ref<confirmData> = ref({ message: "" });
 
-        const close = async () => {
-            isActive.value = false;
-        };
-
-        const defaultData = {
-            title: "",
-            message: "",
-            width: 450,
-            confirmText: "OK",
-            confirmColorClass:
-                "bg-green-600 hover:bg-green-700 active:bg-green-800 focus:border-green-900",
-            cancelText: "Отмена",
-            onConfirm: () => {},
-        };
-
-        const open = async (params) => {
+        const open = (params: confirmData): void => {
             data.value = { ...defaultData, ...params };
             isActive.value = true;
         };
 
-        const confirm = () => {
-            data.value.onConfirm();
+        const close = (): void => {
+            isActive.value = false;
+        };
+
+        const confirm = async (): Promise<any> => {
+            await data.value.onConfirm?.();
             close();
         };
 
@@ -89,8 +92,8 @@ export default {
             isActive,
             data,
             open,
-            confirm,
             close,
+            confirm,
         };
     },
 };

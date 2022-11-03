@@ -1,4 +1,4 @@
-export default function downloadBlob(file, fileName) {
+export default (file: string, fileName: string): void => {
     const downloadUrl = window.URL.createObjectURL(new window.Blob([file]));
     const link = document.createElement("a");
     link.href = downloadUrl;

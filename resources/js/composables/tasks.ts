@@ -1,22 +1,27 @@
 import { reactive, watch, inject } from "vue";
+import type { Ref } from 'vue';
+
 import axios from "axios";
 // utils
 import downloadBlob from "../utils/downloadBlob.utils";
 import prepareFormData from "../utils/prepareFormData.utils";
 // notification
 import { injectionKeyNotifier } from "../components/notification/custom-notifier";
+import { INotify } from "../components/notification/interfaces";
 // constants
 import { PER_PAGE } from "../constants";
+// interfaces
+import { ITask, IFile, IData, Types, IMainTaskData } from "./taskInterfaces";
 
-export default function (selectedTask) {
-    const notify = inject(injectionKeyNotifier);
+export default function (selectedTask: Ref<ITask | null>): IMainTaskData {
+    const notify = inject(injectionKeyNotifier) as INotify;
 
-    const data = reactive({
+    const data: IData = reactive({
         completed: { data: [], page: 1, total: 0, sort: "dateTime" },
         notCompleted: { data: [], page: 1, total: 0, sort: "dateTime" },
     });
 
-    const getNotCompleted = async () => {
+    const getNotCompleted = async (): Promise<any> => {
         try {
             const { data: tasks } = await axios.get("/task/notCompleted", {
                 params: {
@@ -35,7 +40,7 @@ export default function (selectedTask) {
         }
     };
 
-    const getCompleted = async () => {
+    const getCompleted = async (): Promise<any> => {
         try {
             const { data: tasks } = await axios.get("/task/completed", {
                 params: {
@@ -54,7 +59,17 @@ export default function (selectedTask) {
         }
     };
 
-    const downloadTaskFile = async ({ id, name }) => {
+    const functionByType = {
+        [Types.notCompleted]: getNotCompleted,
+        [Types.completed]: getCompleted,
+    };
+
+    const otherType = {
+        [Types.notCompleted]: Types.completed,
+        [Types.completed]: Types.notCompleted,
+    };
+
+    const downloadTaskFile = async ({ id, name }: IFile): Promise<any> => {
         try {
             const { data } = await axios.get(`/task/file/${id}/download`, {
                 responseType: "arraybuffer",
@@ -68,12 +83,7 @@ export default function (selectedTask) {
         }
     };
 
-    const functionByType = {
-        notCompleted: getNotCompleted,
-        completed: getCompleted,
-    };
-
-    const create = async (take) => {
+    const create = async (take: object): Promise<any> => {
         try {
             await axios.post("/task", prepareFormData(take), {
                 headers: {
@@ -89,10 +99,10 @@ export default function (selectedTask) {
         await getNotCompleted();
     };
 
-    const changeCompleted = async (id, type) => {
+    const changeCompleted = async (id: number, type: Types): Promise<any> => {
         try {
             await axios.patch(`/task/${id}/changeCompleted`, {
-                type: type === "notCompleted",
+                type: type === Types.notCompleted,
             });
         } catch (e) {
             notify({
@@ -100,19 +110,20 @@ export default function (selectedTask) {
                 type: "error",
             });
         }
-        const otherType = Object.keys(functionByType).find(
-            (key) => key !== type
-        );
+
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
-            functionByType[otherType]?.();
+            functionByType[otherType[type]]?.();
         } else {
             await Promise.all([getCompleted(), getNotCompleted()]);
         }
     };
 
-    const update = async (take) => {
+    const update = async (take: object): Promise<any> => {
         try {
+            if(!selectedTask.value) {
+                throw new Error("Задача не выбрана");
+            }
             await axios.post(
                 `/task/${selectedTask.value.id}`,
                 prepareFormData(take),
@@ -131,7 +142,7 @@ export default function (selectedTask) {
         await getNotCompleted();
     };
 
-    const destroy = async (id, type) => {
+    const destroy = async (id: number, type: Types): Promise<any> => {
         try {
             await axios.delete(`/task/${id}`);
         } catch (e) {
@@ -145,7 +156,7 @@ export default function (selectedTask) {
         } else await functionByType[type]?.();
     };
 
-    const sendPdfToMail = async () => {
+    const sendPdfToMail = async (): Promise<any> => {
         try {
             await axios.post("/task/pdf");
             notify({
@@ -161,12 +172,12 @@ export default function (selectedTask) {
 
     watch([() => data.notCompleted.page, () => data.notCompleted.sort], () => {
         getNotCompleted();
-        selectedTask.value = {};
+        selectedTask.value = null;
     });
 
     watch([() => data.completed.page, () => data.completed.sort], () => {
         getCompleted();
-        selectedTask.value = {};
+        selectedTask.value = null;
     });
 
     return {
