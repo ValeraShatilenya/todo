@@ -8,12 +8,7 @@
                 class="absolute inset-0 bg-black opacity-50 z-40"
                 @click="close"
             />
-            <div
-                class="z-50 flex flex-col rounded-xl bg-zinc-50 max-w-full"
-                :style="{
-                    width: isNaN(data.width) ? data.width : `${data.width}px`,
-                }"
-            >
+            <div class="z-50 flex flex-col rounded-xl bg-zinc-50 max-w-full">
                 <header
                     class="px-4 py-3 bg-zinc-200 rounded-t-xl text-2xl font-semibold"
                     v-if="data.title"
@@ -72,7 +67,7 @@ export default {
     setup() {
         const isActive: Ref<boolean> = ref(false);
 
-        const data: Ref<confirmData> = ref({ message: "" });
+        const data: Ref<confirmData> = ref({ ...defaultData });
 
         const open = (params: confirmData): void => {
             data.value = { ...defaultData, ...params };
