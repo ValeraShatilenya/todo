@@ -179,7 +179,7 @@ class TaskController extends Controller implements TaskInterface
      */
     public function update(TaskRequest $request, int $id)
     {
-        $task = Task::currentUser()->findOrFail($id);
+        $task = Task::currentUser()->notCompleted()->findOrFail($id);
         $task->update($request->only('title', 'status', 'description'));
         $oldFiles = $request->oldFiles ? explode(',', $request->oldFiles) : [];
 

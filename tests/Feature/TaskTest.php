@@ -144,6 +144,8 @@ class TaskTest extends TestCase
         $task = Task::factory()
             ->for($user)
             ->create();
+        $task->completed = now();
+        $task->save();
 
         $oldFile = UploadedFile::fake()->image('oldFile.jpg');
         $pathOldFile = Storage::putFile("tasks/$task->id", $oldFile);
@@ -155,13 +157,21 @@ class TaskTest extends TestCase
 
         $newFile = UploadedFile::fake()->image('newFile.jpg');
 
-        $response = $this->actingAs($user)
-            ->post("/task/$task->id", [
-                'title' => 'Test title',
-                'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
-                'status' => rand(1, 4),
-                'file_1' => $newFile
-            ]);
+        $updateTaskData = [
+            'title' => 'Test title',
+            'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
+            'status' => rand(1, 4),
+            'file_1' => $newFile
+        ];
+
+        $response = $this->actingAs($user)->post("/task/$task->id", $updateTaskData);
+
+        $response->assertNotFound();
+
+        $task->completed = null;
+        $task->save();
+
+        $response = $this->actingAs($user)->post("/task/$task->id", $updateTaskData);
 
         $response->assertSuccessful();
 

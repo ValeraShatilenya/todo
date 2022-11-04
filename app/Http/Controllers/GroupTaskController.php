@@ -229,7 +229,7 @@ class GroupTaskController extends Controller implements TaskInterface
      */
     public function update(Request $request, int $id)
     {
-        $groupTask = GroupTask::findOrFail($id);
+        $groupTask = GroupTask::notCompleted()->findOrFail($id);
 
         $this->setGroupOrFail($groupTask->group_id);
 
