@@ -113,10 +113,9 @@ export default function (selectedTask: Ref<ITask | null>): IMainTaskData {
 
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
-            functionByType[otherType[type]]?.();
-        } else {
-            await Promise.all([getCompleted(), getNotCompleted()]);
         }
+
+        await Promise.all([getCompleted(), getNotCompleted()]);
     };
 
     const update = async (take: object): Promise<any> => {
@@ -153,7 +152,8 @@ export default function (selectedTask: Ref<ITask | null>): IMainTaskData {
         }
         if (data[type].data.length === 1 && data[type].page > 1) {
             data[type].page--;
-        } else await functionByType[type]?.();
+        }
+        await functionByType[type]?.();
     };
 
     const sendPdfToMail = async (): Promise<any> => {
@@ -170,18 +170,9 @@ export default function (selectedTask: Ref<ITask | null>): IMainTaskData {
         }
     };
 
-    watch([() => data.notCompleted.page, () => data.notCompleted.sort], () => {
-        getNotCompleted();
-        selectedTask.value = null;
-    });
-
-    watch([() => data.completed.page, () => data.completed.sort], () => {
-        getCompleted();
-        selectedTask.value = null;
-    });
-
     return {
         data,
+        functionByType,
         getNotCompleted,
         getCompleted,
         downloadTaskFile,

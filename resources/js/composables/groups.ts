@@ -4,7 +4,7 @@ import axios from "axios";
 
 import { PER_PAGE } from "../constants";
 
-import { IGroup, IGroups, IUsers } from "./groupInterfaces";
+import { IGroup, IGroups, ITaskGroup, IUsers } from "./groupInterfaces";
 import { INotify } from "../components/notification/interfaces";
 import { injectionKeyNotifier } from "../components/notification/custom-notifier";
 
@@ -18,16 +18,18 @@ export default function () {
     const users: Ref<IUsers>  = ref([]);
 
     const getGroupsForTasks = async () => {
+        let data: ITaskGroup[] = [];
         try {
-            const { data } = await axios.get("/group/forTasks");
-            data.unshift({ id: 0, name: "Личный TODO" });
-            return data;
+            const { data: groups } = await axios.get("/group/forTasks");
+            data = groups;
         } catch (e) {
             notify({
                 message: "Ошибка взятия данных!",
                 type: "error",
             });
         }
+        data.unshift({ id: 0, name: "Личный TODO" });
+        return data;
     };
 
     const getGroups = async () => {
@@ -41,6 +43,8 @@ export default function () {
             groups.data = data.data;
             groups.total = data.total;
         } catch (e) {
+            groups.data = [];
+            groups.total = 0;
             notify({
                 message: "Ошибка взятия данных!",
                 type: "error",
@@ -55,9 +59,10 @@ export default function () {
             }
             const { data } = await axios.get(
                 `/group/${selectedGroup.value.id}/users`
-            );
-            users.value = data;
-        } catch (e) {
+                );
+                users.value = data;
+            } catch (e) {
+            users.value = [];
             notify({
                 message: "Ошибка взятия пользователей!",
                 type: "error",
@@ -137,25 +142,14 @@ export default function () {
         }
         if (groups.data.length === 1 && groups.page > 1) {
             groups.page--;
-        } else await getGroups();
+        }
+        await getGroups();
     };
 
     const unselectGroup = () => {
         selectedGroup.value = null;
         users.value = [];
     };
-
-    watch(
-        () => groups.page,
-        () => {
-            unselectGroup();
-            getGroups();
-        }
-    );
-
-    watch(selectedGroup, () => {
-        selectedGroup.value && getUsers();
-    });
 
     return {
         groups,

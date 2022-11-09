@@ -5,7 +5,7 @@
             class="scroller bg-white max-height-calc overflow-y-auto shadow-sm sm:rounded-lg p-3 sm:px-6 sm:pt-6 bg-white border border-gray-200"
         >
             <router-view v-slot="{ Component }">
-                <transition mode="out-in" name="slide">
+                <transition mode="out-in" :name="transitionName">
                     <component :is="Component" />
                 </transition>
             </router-view>
@@ -14,11 +14,41 @@
 </template>
 
 <script lang="ts">
+import { computed, ComputedRef, Ref, ref, watch } from "vue";
+import {
+    RouteLocationNormalizedLoaded,
+    Router,
+    useRoute,
+    useRouter,
+} from "vue-router";
+
 import CustomNavbar from "./CustomNavbar.vue";
 
 export default {
     components: {
         CustomNavbar,
+    },
+    setup() {
+        const route: RouteLocationNormalizedLoaded = useRoute();
+        const router: Router = useRouter();
+
+        const startPosition = <number>router.options.history.state.position;
+
+        const hasPrevRoute: Ref<boolean> = ref(false);
+
+        watch(route, () => {
+            hasPrevRoute.value =
+                <number>router.options.history.state.position - startPosition >
+                0;
+        });
+
+        const transitionName: ComputedRef<string> = computed(() => {
+            return hasPrevRoute.value ? "slide" : "";
+        });
+
+        return {
+            transitionName,
+        };
     },
 };
 </script>

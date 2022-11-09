@@ -67,6 +67,7 @@ export default {
             return props.page === 1;
         });
         const onChangePage = (page: number) => {
+            emit("change", page);
             emit("update:page", page);
         };
         const onClickNext = (): void => {

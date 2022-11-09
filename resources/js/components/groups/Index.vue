@@ -18,10 +18,11 @@
                 </h2>
                 <hr class="my-2" />
                 <pagination
-                    v-model:page="groups.page"
+                    :page="groups.page"
                     :total="groups.total"
                     :totalCurrent="groups.data.length"
                     class="flex justify-center"
+                    @change="onChangePage"
                 />
                 <hr class="my-2" />
                 <template v-for="group in groups.data" :key="group.id">
@@ -155,9 +156,12 @@ import MainItem from "../MainItem.vue";
 import { PER_PAGE } from "../../constants";
 
 import useGroups from "../../composables/groups";
-import { computed, ComputedRef, onMounted, Ref, ref, watch } from "vue";
+import { computed, ComputedRef, inject, onMounted, Ref, ref, watch } from "vue";
 
 import { IGroup, IUsers } from "../../composables/groupInterfaces";
+
+import { injectionKeyLoading } from "../loading/custom-loading";
+import { ILoading } from "../loading/interfaces";
 
 export default {
     components: {
@@ -173,6 +177,7 @@ export default {
             selectedGroup,
             unselectGroup,
             getGroups,
+            getUsers,
             create,
             addUser,
             deleteUser,
@@ -183,8 +188,12 @@ export default {
         const userSearch: Ref<string> = ref("");
         const userPage: Ref<number> = ref(1);
 
+        const loading = inject(injectionKeyLoading) as ILoading;
+
         onMounted(async () => {
+            loading.open();
             await getGroups();
+            loading.close();
         });
 
         const filteredUsersSearch: ComputedRef<IUsers> = computed(() => {
@@ -210,10 +219,13 @@ export default {
         });
 
         const onCreate = async (data: object) => {
+            loading.open();
             await create(data);
+            loading.close();
         };
 
         const onUpdate = async (data: object) => {
+            loading.open();
             await update(data);
             // const index = groups.data.findIndex(
             //     ({ id }) => id === selectedGroup.value.id
@@ -224,24 +236,42 @@ export default {
             //     selectedGroup.value = {};
             // }
             selectedGroup.value = null;
+            users.value = [];
+            loading.close();
         };
 
         const onAddUser = async () => {
+            loading.open();
             await addUser(userSearch.value);
             userSearch.value = "";
+            loading.close();
         };
 
         const onDeleteUser = async (id: number) => {
+            loading.open();
             await deleteUser(id);
             if (filteredUsers.value.length === 0 && userPage.value > 1) {
                 userPage.value--;
             }
+            loading.close();
         };
 
-        const onSelectGroup = (group: IGroup) => {
-            selectedGroup.value === group
-                ? unselectGroup()
-                : (selectedGroup.value = group);
+        const onSelectGroup = async (group: IGroup) => {
+            if (selectedGroup.value === group) {
+                unselectGroup();
+            } else {
+                loading.open();
+                selectedGroup.value = group;
+                await getUsers();
+                loading.close();
+            }
+        };
+
+        const onChangePage = async (page: number) => {
+            loading.open();
+            groups.page = page;
+            await getGroups();
+            loading.close();
         };
 
         return {
@@ -258,6 +288,7 @@ export default {
             onDeleteUser,
             onAddUser,
             destroy,
+            onChangePage,
         };
     },
 };

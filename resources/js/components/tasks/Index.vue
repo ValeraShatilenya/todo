@@ -50,10 +50,11 @@
                 </h2>
                 <hr class="my-2" />
                 <pagination
-                    v-model:page="tasks.data.notCompleted.page"
+                    :page="tasks.data.notCompleted.page"
                     :total="tasks.data.notCompleted.total"
                     :totalCurrent="tasks.data.notCompleted.data.length"
                     class="flex justify-center"
+                    @change="(page) => onChangePage(page, Types.notCompleted)"
                 />
                 <dropdown-sort
                     :data="taskSorts"
@@ -164,6 +165,7 @@
                     :total="tasks.data.completed.total"
                     :totalCurrent="tasks.data.completed.data.length"
                     class="flex justify-center"
+                    @change="(page) => onChangePage(page, Types.completed)"
                 />
                 <dropdown-sort
                     :data="taskSorts"
@@ -256,6 +258,9 @@
 </template>
 
 <script lang="ts">
+import { computed, inject, onMounted, ref, watch } from "vue";
+import type { Ref } from "vue";
+
 import UpdateTask from "./UpdateTask.vue";
 import LegendLabel from "../LegendLabel.vue";
 import Pagination from "../Pagination.vue";
@@ -271,8 +276,8 @@ import useGroupTasks from "../../composables/groupTasks";
 import { injectionKeyConfirm } from "../confirm/custom-confirm";
 import { IConfirm } from "../confirm/interfaces";
 
-import { computed, inject, onMounted, ref, watch } from "vue";
-import type { Ref } from "vue";
+import { injectionKeyLoading } from "../loading/custom-loading";
+import { ILoading } from "../loading/interfaces";
 
 import { ITaskGroup } from "../../composables/groupInterfaces";
 import {
@@ -319,6 +324,7 @@ export default {
         );
 
         const confirm = inject(injectionKeyConfirm) as IConfirm;
+        const loading = inject(injectionKeyLoading) as ILoading;
 
         onMounted(async () => {
             groups.value = await getGroups();
@@ -329,19 +335,27 @@ export default {
             return selectedGroup.value?.id ? groupTasks : tasks;
         });
 
-        watch(selectedGroup, () => {
-            computedTasks.value.getNotCompleted();
-            computedTasks.value.getCompleted();
+        watch(selectedGroup, async () => {
+            loading.open();
             selectedTask.value = null;
+            await Promise.all([
+                computedTasks.value.getNotCompleted(),
+                computedTasks.value.getCompleted(),
+            ]);
+            loading.close();
         });
 
         const onCreate = async (data: object) => {
+            loading.open();
             await computedTasks.value.create(data);
+            loading.close();
         };
 
         const onUpdate = async (data: object) => {
+            loading.open();
             await computedTasks.value.update(data);
             selectedTask.value = null;
+            loading.close();
         };
 
         const onDelete = ({ id, title }: ITask, type: Types) => {
@@ -351,28 +365,40 @@ export default {
                     "bg-red-600 hover:bg-red-700 active:bg-red-800 focus:border-red-900",
                 title: "Удаление задачи",
                 message: `Вы уверены, что желаете удалить задачу с заголовком <b>${title}</b>?`,
-                onConfirm: () => {
+                onConfirm: async () => {
                     if (selectedTask.value?.id === id)
                         selectedTask.value = null;
-                    computedTasks.value.destroy(id, type);
+                    loading.open();
+                    await computedTasks.value.destroy(id, type);
+                    loading.close();
                 },
             });
         };
 
         const onChangeCompleted = async (id: number, type: Types) => {
+            loading.open();
             await computedTasks.value.changeCompleted(id, type);
+            loading.close();
         };
 
         const canEdit = (task: ITask) => {
             return !selectedGroup.value?.id || task.canEdit;
         };
 
-        const downloadTaskFile = (file: IFile) => {
-            return computedTasks.value.downloadTaskFile(file);
+        const downloadTaskFile = async (file: IFile) => {
+            await computedTasks.value.downloadTaskFile(file);
         };
 
         const onSendPdfToMail = async () => {
             await computedTasks.value.sendPdfToMail();
+        };
+
+        const onChangePage = async (newPage: number, type: Types) => {
+            loading.open();
+            computedTasks.value.data[type].page = newPage;
+            await computedTasks.value.functionByType[type]();
+            selectedTask.value = null;
+            loading.close();
         };
 
         return {
@@ -391,6 +417,7 @@ export default {
             downloadTaskFile,
             onDelete,
             onSendPdfToMail,
+            onChangePage,
         };
     },
 };

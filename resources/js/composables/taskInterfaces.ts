@@ -34,6 +34,7 @@ export interface IMainTaskData {
     data: IData,
     getNotCompleted(): Promise<any>,
     getCompleted(): Promise<any>,
+    functionByType: {[Types.notCompleted](): Promise<any>, [Types.completed](): Promise<any>},
     downloadTaskFile(file: IFile): Promise<any>,
     create(take: object): Promise<any>,
     changeCompleted(id: number, type: Types): Promise<any>,

@@ -6,6 +6,7 @@ import { createApp } from "vue";
 import router from "./router/index";
 import Notifier from "./components/notification/custom-notifier";
 import Confirm from "./components/confirm/custom-confirm";
+import Loading from "./components/loading/custom-loading";
 import App from './components/App.vue'
 
 /* import the fontawesome core */
@@ -28,5 +29,6 @@ createApp(App)
     .use(router(userId))
     .use(Notifier)
     .use(Confirm)
+    .use(Loading)
     .component("font-awesome-icon", FontAwesomeIcon)
     .mount("#app");
