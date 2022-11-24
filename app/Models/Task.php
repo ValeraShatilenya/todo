@@ -5,9 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 
 class Task extends Model
 {
@@ -26,11 +25,6 @@ class Task extends Model
         return $query->whereNotNull('completed');
     }
 
-    public function scopeCurrentUser($query)
-    {
-        return $query->where('user_id', Auth::user()->id);
-    }
-
     public function scopeUserId($query, ...$ids)
     {
         return $query->whereIn('user_id', $ids);
@@ -41,8 +35,8 @@ class Task extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function files(): HasMany
+    public function files(): MorphMany
     {
-        return $this->hasMany(File::class);
+        return $this->morphMany(File::class, 'filable');
     }
 }

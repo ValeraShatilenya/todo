@@ -1,7 +1,4 @@
-export interface IFile {
-    id: number;
-    name: string;
-}
+import { IFile } from "./fileInterfaces";
 
 export interface IUser {
     id: number;
@@ -35,7 +32,6 @@ export interface IMainTaskData {
     getNotCompleted(): Promise<any>,
     getCompleted(): Promise<any>,
     functionByType: {[Types.notCompleted](): Promise<any>, [Types.completed](): Promise<any>},
-    downloadTaskFile(file: IFile): Promise<any>,
     create(take: object): Promise<any>,
     changeCompleted(id: number, type: Types): Promise<any>,
     update(take: object): Promise<any>,

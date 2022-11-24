@@ -44,14 +44,14 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function scopeCurrentUser($query)
+    public function scopeUserId($query, ...$ids)
     {
-        return $query->where('id', Auth::user()->id);
+        return $query->whereIn('id', $ids);
     }
 
-    public function scopeNotCurrentUser($query)
+    public function scopeNotUserId($query, ...$ids)
     {
-        return $query->where('id', '!=', Auth::user()->id);
+        return $query->whereNotIn('id', $ids);
     }
 
     public function groups(): BelongsToMany

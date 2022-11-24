@@ -10,9 +10,16 @@ class File extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'path', 'task_id', 'group_task_id'];
+    protected $fillable = ['name', 'path'];
+
+    protected $hidden = ['filable_id', 'filable_type', 'created_at'];
 
     const UPDATED_AT = null;
+
+    public function filable()
+    {
+        return $this->morphTo();
+    }
 
     public function scopeOnlyTask($query)
     {
@@ -22,15 +29,5 @@ class File extends Model
     public function scopeOnlyGroupTask($query)
     {
         return $query->whereNotNull('group_task_id');
-    }
-
-    public function task(): BelongsTo
-    {
-        return $this->belongsTo(Task::class);
-    }
-
-    public function groupTask(): BelongsTo
-    {
-        return $this->belongsTo(GroupTask::class);
     }
 }

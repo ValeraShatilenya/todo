@@ -3,9 +3,9 @@
 namespace App\Jobs;
 
 use App\Http\Controllers\PDFController;
-use App\Http\Controllers\TaskInterface;
 use App\Mail\SendPDF;
 use App\Models\User;
+use App\Repositories\TaskInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,19 +20,19 @@ class SendPDFJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $user = null;
-    public $controller = null;
-    public $parameters = [];
+    public User $user;
+    public TaskInterface $repository;
+    public array $parameters = [];
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(User $user, TaskInterface $controller, array $parameters = [])
+    public function __construct(User $user, TaskInterface $repository, array $parameters = [])
     {
         $this->user = $user;
-        $this->controller = $controller;
+        $this->repository = $repository;
         $this->parameters = $parameters;
     }
 
@@ -43,7 +43,7 @@ class SendPDFJob implements ShouldQueue
      */
     public function handle()
     {
-        $pdf = PDFController::generateTasksPDF($this->controller->getNotCompletedData(...$this->parameters), $this->controller->getCompletedData(...$this->parameters), $this->user->id);
+        $pdf = PDFController::generateTasksPDF($this->repository->getNotCompletedData(...$this->parameters), $this->repository->getCompletedData(...$this->parameters), $this->user->id);
 
         $path = 'pdf/' . Str::uuid() . '.pdf';
 

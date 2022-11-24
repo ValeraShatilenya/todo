@@ -89,7 +89,7 @@ import { computed, Ref, ref, watchEffect } from "vue";
 import DropdownRadio from "../DropdownRadio.vue";
 
 import { STATUSES } from "../../constants";
-import { IFile } from "../../composables/taskInterfaces";
+import { IFile } from "../../composables/fileInterfaces";
 
 export default {
     components: {

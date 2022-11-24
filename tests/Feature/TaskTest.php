@@ -24,27 +24,21 @@ class TaskTest extends TestCase
             ->for($user)
             ->create();
 
-        $response = $this->actingAs($user)
-            ->get('/task/notCompleted', ['page' => '1', 'perPage' => 15]);
-
-        $response->assertStatus(200);
-
-        $response = $this->actingAs($user)
-            ->get('/task/completed', ['page' => '1', 'perPage' => 15]);
-
-        $response->assertStatus(200);
-
         $total = 0;
 
-        $data = $this->actingAs($user)
-            ->getJson('/task/notCompleted', ['page' => '1', 'perPage' => 15]);
+        $response = $this->actingAs($user)
+            ->call('GET', '/task/notCompleted', ['page' => 1, 'perPage' => 15, 'sort' => 'dateTime']);
 
-        $total += $data->original['total'];
+        $response->assertStatus(200);
 
-        $data = $this->actingAs($user)
-            ->getJson('/task/completed', ['page' => '1', 'perPage' => 15]);
+        $total += json_decode($response->content())->total;
 
-        $total += $data->original['total'];
+        $response = $this->actingAs($user)
+            ->call('GET', '/task/completed', ['page' => 1, 'perPage' => 15, 'sort' => 'dateTime']);
+
+        $response->assertStatus(200);
+
+        $total += json_decode($response->content())->total;
 
         $this->assertEquals(15, $total);
     }
@@ -111,7 +105,7 @@ class TaskTest extends TestCase
                 'title' => 'Test title',
                 'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
                 'status' => rand(1, 4),
-                'file_1' => $file
+                'files' => [$file]
             ]);
 
         $response->assertSuccessful();
@@ -125,7 +119,8 @@ class TaskTest extends TestCase
         $task = $user->tasks()->first();
 
         $this->assertDatabaseHas('files', [
-            'task_id' => $task->id
+            'filable_id' => $task->id,
+            'filable_type' => 'App\Models\Task'
         ]);
 
         Storage::assertExists("tasks/$task->id/{$file->hashName()}");
@@ -161,7 +156,7 @@ class TaskTest extends TestCase
             'title' => 'Test title',
             'description' => 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ab, vero corrupti nihil esse similique, voluptatibus rerum excepturi consequatur aspernatur, at enim. Temporibus mollitia dolorum assumenda obcaecati doloribus iure, perferendis provident.',
             'status' => rand(1, 4),
-            'file_1' => $newFile
+            'files' => [$newFile]
         ];
 
         $response = $this->actingAs($user)->post("/task/$task->id", $updateTaskData);
@@ -181,12 +176,14 @@ class TaskTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('files', [
-            'task_id' => $task->id,
+            'filable_id' => $task->id,
+            'filable_type' => 'App\Models\Task',
             'name' => 'newFile.jpg',
         ]);
 
         $this->assertDatabaseMissing('files', [
-            'task_id' => $task->id,
+            'filable_id' => $task->id,
+            'filable_type' => 'App\Models\Task',
             'name' => 'oldFile.jpg',
         ]);
 
@@ -267,16 +264,16 @@ class TaskTest extends TestCase
         $file = $task->files()->first();
 
         $response = $this->actingAs($user)
-            ->get("/task/file/$file->id/download");
+            ->get("/file/$file->id/download");
 
         $response->assertSuccessful();
 
         $newUser = User::factory()->create();
 
         $response = $this->actingAs($newUser)
-            ->get("/task/file/$file->id/download");
+            ->get("/file/$file->id/download");
 
-        $response->assertNotFound();
+        $response->assertStatus(500);
 
         Storage::deleteDirectory("tasks/$task->id");
     }

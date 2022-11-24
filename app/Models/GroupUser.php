@@ -16,9 +16,9 @@ class GroupUser extends Model
 
     protected $fillable = ['admin'];
 
-    public function scopeCurrentUser($query)
+    public function scopeUserId($query, ...$ids)
     {
-        return $query->where('user_id', Auth::user()->id);
+        return $query->whereIn('user_id', $ids);
     }
 
     public function scopeAdmin($query)

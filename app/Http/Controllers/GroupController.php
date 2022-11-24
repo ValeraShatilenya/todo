@@ -14,16 +14,13 @@ use Illuminate\Support\Facades\Auth;
 
 class GroupController extends Controller
 {
-    /**
-     * Find group or fail
-     */
-    private function findOrFailGroup(int $id, bool $definitelyAdmin = false): object
+    private function findOrFailGroup(int $id, int $userId, bool $definitelyAdmin = false): object
     {
-        $group = Group::whereHas('users', function ($query) {
-            $query->currentUser();
+        $group = Group::whereHas('users', function ($query) use ($userId) {
+            $query->userId($userId);
         })
-            ->with(['groupUsers' => function ($query) {
-                $query->currentUser()->admin();
+            ->with(['groupUsers' => function ($query) use ($userId) {
+                $query->userId($userId)->admin();
             }])
             ->findOrFail($id);
         $isAdmin = $group->groupUsers->isNotEmpty();
@@ -35,48 +32,39 @@ class GroupController extends Controller
         return (object)compact('group', 'isAdmin');
     }
 
-    /**
-     * Get all group current user.
-     *
-     */
     public function getGroupsForTasks(): JsonResponse
     {
+        $userId = Auth::user()->id;
         $groups = Group::select('id', 'name')
-            ->whereHas('users', function ($query) {
-                $query->currentUser();
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->userId($userId);
             })
             ->orderBy('name')
             ->get();
         return response()->json($groups);
     }
 
-    /**
-     * Get all group current user builder.
-     *
-     */
-    private function getGroupsForGroupsBuilder(): Builder
+    private function getGroupsForGroupsBuilder($userId): Builder
     {
         return Group::select('id', 'name', 'description', 'created_at as dateTime')
-            ->whereHas('users', function ($query) {
-                $query->currentUser();
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->userId($userId);
             })
-            ->with(['groupUsers' => function ($query) {
-                $query->currentUser()->admin();
+            ->with(['groupUsers' => function ($query) use ($userId) {
+                $query->userId($userId)->admin();
             }])
             ->orderBy('name');
     }
 
-    /**
-     * Get all group current user.
-     *
-     */
     public function getGroupsForGroups(Request $request)
     {
         $page = $request->input('page', 1);
         $perPage = $request->input('perPage', 15);
         if ($perPage > 100) $perPage = 100;
 
-        $data = $this->getGroupsForGroupsBuilder()
+        $userId = Auth::user()->id;
+
+        $data = $this->getGroupsForGroupsBuilder($userId)
             ->forPage($page, $perPage)
             ->get()
             ->each(function ($group) {
@@ -89,16 +77,14 @@ class GroupController extends Controller
         return compact('data', 'total');
     }
 
-    /**
-     * Get all group current user.
-     *
-     */
     public function getUsers(int $id): JsonResponse
     {
-        $this->findOrFailGroup($id);
+        $userId = Auth::user()->id;
+
+        $this->findOrFailGroup($id, $userId);
 
         $users = User::select('id', 'name', 'email')
-            ->notCurrentUser()
+            ->notUserId($userId)
             ->whereHas('groups', function ($query) use ($id) {
                 $query->where('id', $id);
             })
@@ -114,10 +100,6 @@ class GroupController extends Controller
         return response()->json($users);
     }
 
-    /**
-     * Create the specified group in storage.
-     *
-     */
     public function create(GroupRequest $request): Response
     {
         $group = Group::create($request->only('name', 'description'));
@@ -125,47 +107,37 @@ class GroupController extends Controller
         return response()->noContent();
     }
 
-    /**
-     * Add user to group
-     *
-     */
     public function addUser(Request $request, int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id, true);
+        $userId = Auth::user()->id;
+
+        $groupInfo = $this->findOrFailGroup($id, $userId, true);
         $userId = User::where('email', $request->email)->firstOrFail();
         $groupInfo->group->users()->syncWithoutDetaching($userId);
         return response()->noContent();
     }
 
-    /**
-     * Delete user from group
-     *
-     */
     public function deleteUser(int $groupId, int $userId): Response
     {
-        $groupInfo = $this->findOrFailGroup($groupId, true);
+        $groupInfo = $this->findOrFailGroup($groupId, $userId, true);
         $groupInfo->group->users()->detach($userId);
         return response()->noContent();
     }
 
-    /**
-     * Update the specified group in storage.
-     *
-     */
     public function update(GroupRequest $request, int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id, true);
+        $userId = Auth::user()->id;
+
+        $groupInfo = $this->findOrFailGroup($id, $userId, true);
         $groupInfo->group->update($request->only('name', 'description'));
         return response()->noContent();
     }
 
-    /**
-     * Destroy the specified group from storage.
-     *
-     */
     public function destroy(int $id): Response
     {
-        $groupInfo = $this->findOrFailGroup($id, true);
+        $userId = Auth::user()->id;
+
+        $groupInfo = $this->findOrFailGroup($id, $userId, true);
         $groupInfo->group->delete();
         return response()->noContent();
     }

@@ -2,227 +2,93 @@
 
 namespace App\Http\Controllers;
 
+use App\Dto\ChangeCompletedTaskDto;
+use App\Dto\CreateTaskDto;
+use App\Dto\GetTasksDto;
+use App\Dto\UpdateTaskDto;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\TaskRequest;
+use App\Http\Requests\ChangeCompletedTaskRequest;
+use App\Http\Requests\GetTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 use App\Jobs\SendPDFJob;
-use App\Models\Task;
-use App\Models\File as ModelsFile;
-use Illuminate\Database\Eloquent\Builder;
+use App\Repositories\TaskRepository;
+use App\Services\TaskService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
-class TaskController extends Controller implements TaskInterface
+class TaskController extends Controller
 {
-    /**
-     * Get Not Completed tasks Builder.
-     */
-    private function getNotCompletedBuilder(int $userId = null, string $sort = 'dateTime'): Builder
+    public function getNotCompleted(GetTaskRequest $request, TaskService $taskService)
     {
-        $userId = $userId ?? Auth::user()->id;
-        $builder = Task::select('id', 'title', 'description', 'status', 'created_at as dateTime')
-            ->with(['files' => function ($query) {
-                $query->select('id', 'name', 'task_id');
-            }])
-            ->notCompleted()
-            ->userId($userId);
-        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
-        else if ($sort === 'status') {
-            $builder->orderBy('status')
-                ->orderByDesc('dateTime');
-        }
-        return $builder;
+        $data = $request->validated();
+        $data['userId'] = Auth::user()->id;
+
+        $dto = GetTasksDto::createFromArray($data);
+
+        return $taskService->getNotCompleted($dto);
     }
 
-    /**
-     * Get Not Completed tasks data.
-     */
-    public function getNotCompletedData(int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
+    public function getCompleted(GetTaskRequest $request, TaskService $taskService)
     {
-        $builder = $this->getNotCompletedBuilder($userId, $sort);
-        if ($page && $perPage) {
-            $builder->forPage($page, $perPage);
-        }
-        return $builder->get()
-            ->each(function ($task) {
-                foreach ($task->files as $file) {
-                    unset($file->task_id);
-                }
-            });
+        $data = $request->validated();
+        $data['userId'] = Auth::user()->id;
+
+        $dto = GetTasksDto::createFromArray($data);
+
+        return $taskService->getCompleted($dto);
     }
 
-    /**
-     * Get Not Completed tasks.
-     */
-    public function getNotCompleted(Request $request)
+    public function create(UpdateTaskRequest $request, TaskService $taskService)
     {
-        $page = $request->input('page', 1);
-        $perPage = $request->input('perPage', 15);
-        if ($perPage > 100)  $perPage = 100;
-        $sort = $request->input('sort', 'dateTime');
-        return ['data' => $this->getNotCompletedData(null, $page, $perPage, $sort), 'total' => $this->getNotCompletedBuilder(null)->count()];
-    }
+        $data = $request->validated();
+        $data['userId'] = Auth::user()->id;
 
-    /**
-     * Get Not Completed tasks Builder.
-     */
-    private function getCompletedBuilder(int $userId = null, string $sort = 'dateTime'): Builder
-    {
-        $userId = $userId ?? Auth::user()->id;
-        $builder = Task::select('id', 'title', 'description', 'status', 'completed as dateTime')
-            ->with(['files' => function ($query) {
-                $query->select('id', 'name', 'task_id');
-            }])
-            ->completed()
-            ->userId($userId);
-        if ($sort === 'dateTime') $builder->orderByDesc('dateTime');
-        else if ($sort === 'status') {
-            $builder->orderBy('status')
-                ->orderByDesc('dateTime');
-        }
-        return $builder;
-    }
+        $dto = CreateTaskDto::createFromArray($data);
 
-    /**
-     * Get Completed tasks data.
-     */
-    public function getCompletedData(int $userId = null, int $page = null, int $perPage = null, string $sort = 'dateTime')
-    {
-        $builder = $this->getCompletedBuilder($userId, $sort);
-        if ($page && $perPage) {
-            $builder->forPage($page, $perPage);
-        }
-        return $builder->get()
-            ->each(function ($task) {
-                foreach ($task->files as $file) {
-                    unset($file->task_id);
-                }
-            });
-    }
-
-    /**
-     * Get Completed tasks.
-     */
-    public function getCompleted(Request $request)
-    {
-        $page = $request->input('page', 1);
-        $perPage = $request->input('perPage', 15);
-        if ($perPage > 100)  $perPage = 100;
-        $sort = $request->input('sort', 'dateTime');
-        return ['data' => $this->getCompletedData(null, $page, $perPage, $sort), 'total' => $this->getCompletedBuilder(null)->count()];
-    }
-
-    /**
-     * Get file.
-     */
-    public function downloadTaskFile(int $id)
-    {
-        $file = ModelsFile::whereHas('task', function ($query) {
-            $query->currentUser();
-        })
-            ->findOrFail($id);
-        return Storage::get($file->path);
-    }
-
-    /**
-     * Create files.
-     */
-    private function createFiles(Request $request, int $id)
-    {
-        $indexFile = 1;
-        $file = $request->file("file_$indexFile");
-        while ($file) {
-            $path = Storage::putFile("tasks/$id", $file);
-            ModelsFile::create([
-                'name' => $file->getClientOriginalName(),
-                'path' => $path,
-                'task_id' => $id
-            ]);
-            $indexFile++;
-            $file = $request->file("file_$indexFile");
-        }
-    }
-
-    /**
-     * Create the specified task in storage.
-     */
-    public function create(TaskRequest $request)
-    {
-        $dataForCreate = $request->only('title', 'status', 'description');
-        $dataForCreate['user_id'] = Auth::user()->id;
-        $task = Task::create($dataForCreate);
-
-        $this->createFiles($request, $task->id);
+        $taskService->create($dto);
 
         return response()->noContent();
     }
 
-    /**
-     * Change completed date the specified task in storage.
-     */
-    public function changeCompleted(Request $request, int $id)
+    public function changeCompleted(ChangeCompletedTaskRequest $request, TaskService $taskService, int $id)
     {
-        $type = $request->type;
-        $task = Task::currentUser()->findOrFail($id);
-        if ($type && !$task->completed) {
-            $task->completed = now();
-            $task->save();
-        } else if (!$type && $task->completed) {
-            $task->completed = null;
-            $task->save();
-        }
-        return response()->noContent();
-    }
+        $data = $request->validated();
+        $data['id'] = $id;
+        $data['userId'] = Auth::user()->id;
 
-    /**
-     * Update the specified task in storage.
-     */
-    public function update(TaskRequest $request, int $id)
-    {
-        $task = Task::currentUser()->notCompleted()->findOrFail($id);
-        $task->update($request->only('title', 'status', 'description'));
-        $oldFiles = $request->oldFiles ? explode(',', $request->oldFiles) : [];
+        $dto = ChangeCompletedTaskDto::createFromArray($data);
 
-        // delete
-        $filesToDelete = ModelsFile::select('id', 'path')
-            ->where('task_id', $id)
-            ->whereNotIn('id', $oldFiles)
-            ->get()
-            ->reduce(function ($arr, $file) {
-                $arr['id'][] = $file->id;
-                $arr['path'][] = $file->path;
-                return $arr;
-            }, ['id' => [], 'path' => []]);
-        Storage::delete($filesToDelete['path']);
-        ModelsFile::destroy($filesToDelete['id']);
-
-        // create
-        $this->createFiles($request, $id);
+        $taskService->changeCompleted($dto);
 
         return response()->noContent();
     }
 
-    /**
-     * Destroy the specified task from storage.
-     */
-    public function destroy(int $id)
+    public function update(UpdateTaskRequest $request, TaskService $taskService, int $id)
     {
-        $task = Task::currentUser()->findOrFail($id);
+        $data = $request->validated();
+        $data['id'] = $id;
+        $data['userId'] = Auth::user()->id;
 
-        Storage::deleteDirectory("tasks/$id");
-        $task->files()->delete();
-        $task->delete();
+        $dto = UpdateTaskDto::createFromArray($data);
+
+        $taskService->update($dto);
 
         return response()->noContent();
     }
 
-    /**
-     * Send PDF to Mail
-     */
+    public function destroy(TaskService $taskService, int $id)
+    {
+        $userId = Auth::user()->id;
+
+        $taskService->destroy($id, $userId);
+
+        return response()->noContent();
+    }
+
     public function sendPdfToMail()
     {
         $user = Auth::user();
 
-        dispatch(new SendPDFJob($user, $this, [$user->id]));
+        dispatch(new SendPDFJob($user, new TaskRepository, [$user->id]));
     }
 }

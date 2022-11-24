@@ -280,12 +280,9 @@ import { injectionKeyLoading } from "../loading/custom-loading";
 import { ILoading } from "../loading/interfaces";
 
 import { ITaskGroup } from "../../composables/groupInterfaces";
-import {
-    IFile,
-    IMainTaskData,
-    ITask,
-    Types,
-} from "../../composables/taskInterfaces";
+import { IMainTaskData, ITask, Types } from "../../composables/taskInterfaces";
+
+import useDownloadTaskFile from "../../composables/downloadTaskFile";
 
 export default {
     components: {
@@ -314,6 +311,8 @@ export default {
             selectedTask,
             selectedGroup
         );
+
+        const downloadTaskFile = useDownloadTaskFile();
 
         interface IStatuseObject {
             [key: number]: IStatuse;
@@ -383,10 +382,6 @@ export default {
 
         const canEdit = (task: ITask) => {
             return !selectedGroup.value?.id || task.canEdit;
-        };
-
-        const downloadTaskFile = async (file: IFile) => {
-            await computedTasks.value.downloadTaskFile(file);
         };
 
         const onSendPdfToMail = async () => {

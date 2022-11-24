@@ -3,19 +3,22 @@ import type { Ref } from "vue";
 
 import axios from "axios";
 // utils
-import downloadBlob from "../utils/downloadBlob.utils";
 import prepareFormData from "../utils/prepareFormData.utils";
 // constants
 import { PER_PAGE } from "../constants";
 // notification
 import { injectionKeyNotifier } from "../components/notification/custom-notifier";
 import { INotify } from "../components/notification/interfaces";
+// loading
+import { injectionKeyLoading } from "../components/loading/custom-loading";
+import { ILoading } from "../components/loading/interfaces";
 // interfaces
-import { ITask, IFile, Types, IMainTaskData } from "./taskInterfaces";
+import { ITask, Types, IMainTaskData } from "./taskInterfaces";
 import { ITaskGroup } from "./groupInterfaces";
 
 export default function (selectedTask: Ref<ITask | null>, selectedGroup: Ref<ITaskGroup | null>): IMainTaskData {
     const notify = inject(injectionKeyNotifier) as INotify;
+    const loading = inject(injectionKeyLoading) as ILoading;
 
     const data = reactive({
         completed: { data: [], page: 1, total: 0, sort: "dateTime" },
@@ -80,23 +83,6 @@ export default function (selectedTask: Ref<ITask | null>, selectedGroup: Ref<ITa
     const otherType = {
         [Types.notCompleted]: Types.completed,
         [Types.completed]: Types.notCompleted,
-    };
-
-    const downloadTaskFile = async ({ id, name }: IFile): Promise<any> => {
-        try {
-            const { data } = await axios.get(
-                `/group-task/file/${id}/download`,
-                {
-                    responseType: "arraybuffer",
-                }
-            );
-            downloadBlob(data, name);
-        } catch (e) {
-            notify({
-                message: "Ошибка скачивания данных!",
-                type: "error",
-            });
-        }
     };
 
     const create = async (take: object): Promise<any> => {
@@ -195,12 +181,26 @@ export default function (selectedTask: Ref<ITask | null>, selectedGroup: Ref<ITa
         }
     };
 
+    watch(() => data.completed.sort, async () => {
+        loading.open();
+        if(data.completed.page > 1) data.completed.page = 1;
+        await getCompleted();
+        loading.close();
+    });
+
+    watch(() => data.notCompleted.sort, async () => {
+        loading.open();
+        if(data.notCompleted.page > 1) data.notCompleted.page = 1;
+        await getNotCompleted();
+        loading.close();
+    });
+
+
     return {
         data,
         functionByType,
         getNotCompleted,
         getCompleted,
-        downloadTaskFile,
         create,
         changeCompleted,
         update,

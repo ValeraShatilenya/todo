@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,9 +26,9 @@ class GroupTask extends Model
         return $query->whereNotNull('completed');
     }
 
-    public function scopeCurrentUser($query)
+    public function scopeUserId($query, ...$ids)
     {
-        return $query->where('user_id', Auth::user()->id);
+        return $query->whereIn('user_id', $ids);
     }
 
     public function user(): BelongsTo
@@ -46,8 +46,8 @@ class GroupTask extends Model
         return $this->belongsTo(Group::class);
     }
 
-    public function files(): HasMany
+    public function files(): MorphMany
     {
-        return $this->hasMany(File::class);
+        return $this->morphMany(File::class, 'filable');
     }
 }

@@ -17,12 +17,8 @@ class CreateFilesTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('path');
-            $table->foreignId('task_id')->nullable();
-            $table->foreignId('group_task_id')->nullable();
+            $table->morphs('filable');
             $table->timestamp('created_at')->useCurrent();
-
-            $table->foreign('task_id')->references('id')->on('tasks');
-            $table->foreign('group_task_id')->references('id')->on('group_tasks');
         });
     }
 

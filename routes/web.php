@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\GroupController;
@@ -22,7 +23,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('task')->group(function () {
         Route::get('/notCompleted', [TaskController::class, 'getNotCompleted']);
         Route::get('/completed', [TaskController::class, 'getCompleted']);
-        Route::get('/file/{id}/download', [TaskController::class, 'downloadTaskFile']);
         Route::post('/pdf', [TaskController::class, 'sendPdfToMail']);
         Route::post('/', [TaskController::class, 'create']);
         Route::patch('/{id}/changeCompleted', [TaskController::class, 'changeCompleted']);
@@ -32,7 +32,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('group-task')->group(function () {
         Route::get('/{id}/notCompleted', [GroupTaskController::class, 'getNotCompleted']);
         Route::get('/{id}/completed', [GroupTaskController::class, 'getCompleted']);
-        Route::get('/file/{id}/download', [GroupTaskController::class, 'downloadTaskFile']);
         Route::post('/{id}/pdf', [GroupTaskController::class, 'sendPdfToMail']);
         Route::post('/group/{id}', [GroupTaskController::class, 'create']);
         Route::patch('/{id}/changeCompleted', [GroupTaskController::class, 'changeCompleted']);
@@ -48,6 +47,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{groupId}/user/{userId}', [GroupController::class, 'deleteUser']);
         Route::patch('/{id}', [GroupController::class, 'update']);
         Route::delete('/{id}', [GroupController::class, 'destroy']);
+    });
+    Route::prefix('file')->group(function () {
+        Route::get('/{id}/download', [FileController::class, 'downloadTaskFile']);
     });
     Route::get('{any?}', function () {
         return view('main');
